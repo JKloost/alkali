@@ -32,15 +32,18 @@ class Model(DartsModel):
 
         """Physical properties"""
         # Create property containers:
-        components_name = ['Na+', 'Cl-', 'CO3-2', 'H+', 'OH-', 'Al+3', 'H3SiO4-', 'H2O', 'HCO3-', 'Al(OH)4-', 'H4SiO4', 'Kaolinite', 'Quartz']
-        elements_name = ['Na+', 'Cl-', 'CO3-2', 'H+', 'OH-', 'Al+3', 'H3SiO4-']
+        # components_name = ['Na+', 'Cl-', 'CO3-2', 'H+', 'OH-', 'Al+3', 'H3SiO4-', 'H2O', 'HCO3-', 'Al(OH)4-', 'H4SiO4', 'Kaolinite', 'Quartz']
+        # elements_name = ['Na+', 'Cl-', 'CO3-2', 'H+', 'OH-', 'Al+3', 'H3SiO4-']
+        components_name = ['OH-', 'H+', 'Na+', 'Cl-', 'H2O', 'NaOH']
+        elements_name = ['OH-', 'H+', 'Na+', 'Cl-']
         # elements_name = ['H', 'O', 'C', 'Na', 'Cl', 'Al', 'Si']
         # aqueous_phase = ['H2O(aq)', 'CO2(aq)', 'Ca+2', 'CO3-2', 'Na+', 'Cl-']
         # gas_phase = ['H2O(g)', 'CO2(g)']
         # solid_phase = ['Calcite', 'Halite']
 
         self.thermal = 0
-        Mw = [22.99, 35.45, 60.009, 1.0080, 17.008, 212.996, 95.107, 18.012, 61.012, 78, 96.116, 258.16, 60.083]
+        #Mw = [22.99, 35.45, 60.009, 1.0080, 17.008, 212.996, 95.107, 18.012, 61.012, 78, 96.116, 258.16, 60.083]
+        Mw = [17.008, 1.008, 22.99, 35.45, 18.015, 39.997]
         # Mw = [18.015, 44.01, 22.99, 35.45, 58.44]
         self.reaktoro = Reaktoro()  # Initialise Reaktoro
         # E_mat = np.array([[1, 0, 0, 0, 0, 0, 0],
@@ -48,23 +51,28 @@ class Model(DartsModel):
         #                   [0, 0, 1, 0, 0, 1, 0],
         #                   [0, 0, 0, 1, 0, 0, 0],
         #                   [0, 0, 0, 0, 1, 1, 2]])
-        E_mat = np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                          [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                          [0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-                          [0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0],
-                          [0, 0, 0, 0, 1, 0, 0, 1, 0, 4, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
-                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
-        E_mat = np.array([[1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-                            [0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0],
-                          [0, 0, 1, 0, 0, 1, 0, 4, 0, 0, 0],
-                          [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
-                          [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
-                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
-        solid_density = [2000, 2000]  # fill in density for amount of solids present
+        # E_mat = np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        #                   [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        #                   [0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+        #                   [0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0],
+        #                   [0, 0, 0, 0, 1, 0, 0, 1, 0, 4, 0, 0, 0],
+        #                   [0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+        #                   [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
+        #                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+        #                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
+        E_mat = np.array([[1, 0, 0, 0, 1, 1],
+                          [0, 1, 0, 0, 1, 0],
+                          [0, 0, 1, 0, 0, 1],
+                          [0, 0, 0, 1, 0, 0]])
+        # E_mat = np.array([[1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+        #                     [0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0],
+        #                   [0, 0, 1, 0, 0, 1, 0, 4, 0, 0, 0],
+        #                   [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+        #                   [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
+        #                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+        #                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
+        # solid_density = [2000, 2000]  # fill in density for amount of solids present
+        solid_density = None
         self.property_container = model_properties(phases_name=['wat', 'sol'],
                                                    components_name=components_name, elements_name=elements_name,
                                                    reaktoro=self.reaktoro, E_mat=E_mat, diff_coef=1e-9, rock_comp=1e-7,
@@ -74,15 +82,12 @@ class Model(DartsModel):
         # self.property_container.flash_ev = Flash(self.components[:-1], [10, 1e-12, 1e-1], self.zero)
         # return [y, x], [V, 1-V]
         self.property_container.density_ev = dict([
-            ('wat', Density(compr=1e-6, dens0=1000)),
-            ('sol', Density(compr=0, dens0=2630))])
+            ('wat', Density(compr=1e-6, dens0=1000))])
 
         self.property_container.viscosity_ev = dict([
-            ('wat', ViscosityConst(1)),
-            ('sol', ViscosityConst(1))])
+            ('wat', ViscosityConst(1))])
         self.property_container.rel_perm_ev = dict([
-            ('wat', PhaseRelPerm("wat")),
-            ('sol', PhaseRelPerm('sol'))])
+            ('wat', PhaseRelPerm("wat"))])
 
         # ne = self.property_container.nc + self.thermal
         # self.property_container.kinetic_rate_ev = kinetic_basic(equi_prod, 1e-0, ne)
@@ -92,9 +97,9 @@ class Model(DartsModel):
                                      min_z=self.zero / 10, max_z=1 - self.zero / 10, cache=0)
 
         #                  H2O,                     CO2,    Ca++,       CO3--,      Na+, Cl-
-        #                  H2O,                     Ca++,      Na+,       Cl-          X-
-        self.ini_stream = [0.98 - 2 * self.zero, self.zero, 0.01, self.zero]  # 0.002
-        self.inj_stream = [0.96 - 3 * self.zero, 0.01, 0.005, 0.025]  # 0.000
+        #                  Oh- H+ Na+ Cl-
+        self.ini_stream = [0.5-self.zero, 0.5, self.zero]  # 0.002
+        self.inj_stream = [0.51-self.zero, 0.49, self.zero]  # 0.000
         # self.inj_stream = self.ini_stream
 
         self.params.first_ts = 1e-6
@@ -410,10 +415,10 @@ def Flash_Reaktoro(z_e, T, P, reaktoro):
     #     z_e[2] = ze_new
     #     z_e[3] = ze_new
     #     # z_e = [float(i) / sum(z_e) for i in z_e]
-    # if z_e[4] != z_e[5]:
-    #     ze_new = (z_e[4] + z_e[5]) / 2
-    #     z_e[4] = ze_new
-    #     z_e[5] = ze_new
+    if z_e[0] != z_e[1]:
+        ze_new = (z_e[1] + z_e[0]) / 2
+        z_e[0] = ze_new
+        z_e[1] = ze_new
     reaktoro.addingproblem(T, P, z_e)
     nu, x, z_c, density = reaktoro.output()  # z_c order is determined by user, check if its the same order as E_mat
     return nu, x, z_c, density
@@ -427,12 +432,13 @@ class Reaktoro:
 
         '''Hardcode'''
         # 'H2O', 'Na+', 'Cl-', 'CO3-2', 'H+', 'OH-', 'Al+3', 'HCO3-', 'Al(OH)4-', 'H4SiO4', 'H3SiO4-', 'Kaolinite', 'Quartz'
-        self.aq_comp = StringList(['Na+', 'Cl-', 'CO3-2', 'H+', 'OH-', 'Al+3', 'H3SiO4-', 'H2O', 'HCO3-', 'Al(OH)4-', 'H4SiO4'])
-        self.sol_comp = ['Kaolinite', 'Quartz']
+        # self.aq_comp = StringList(['Na+', 'Cl-', 'CO3-2', 'H+', 'OH-', 'Al+3', 'H3SiO4-', 'H2O', 'HCO3-', 'Al(OH)4-', 'H4SiO4'])
+        self.aq_comp = StringList(['OH-', 'H+', 'Na+', 'Cl-', 'H2O', 'NaOH'])
+        # self.sol_comp = ['Kaolinite', 'Quartz']
         aq = AqueousPhase(self.aq_comp)
-        for i in range(len(self.sol_comp)):
-            globals()['sol%s' % i] = MineralPhase(self.sol_comp[i])
-        self.system = ChemicalSystem(db, aq, sol0, sol1)
+        # for i in range(len(self.sol_comp)):
+        #     globals()['sol%s' % i] = MineralPhase(self.sol_comp[i])
+        self.system = ChemicalSystem(db, aq)
         self.specs = EquilibriumSpecs(self.system)
         self.specs.temperature()
         self.specs.pressure()
@@ -446,10 +452,11 @@ class Reaktoro:
         state = ChemicalState(self.system)
         state.temperature(temp, 'kelvin')
         state.pressure(pres, 'bar')
-        for i in range(self.aq_comp.size()):
+        ne = self.aq_comp.size() - 2
+        for i in range(ne):
             state.set(self.aq_comp[i], z_e[i], 'mol')
-        state.set('Kaolinite', z_e[i+1], 'mol')
-        state.set('Quartz', z_e[i + 1], 'mol')
+        # state.set('Kaolinite', z_e[i+1], 'mol')
+        # state.set('Quartz', z_e[i + 1], 'mol')
         conditions = EquilibriumConditions(self.specs)
         conditions.temperature(temp, "celsius")
         conditions.pressure(pres, "bar")
@@ -466,29 +473,30 @@ class Reaktoro:
     def output(self):
         # gas_props: ChemicalPropsPhaseConstRef = self.cp.phaseProps(0)
         liq_props: ChemicalPropsPhaseConstRef = self.cp.phaseProps(0)
-        sol_props: ChemicalPropsPhaseConstRef = self.cp.phaseProps(1)
-        sol_props2: ChemicalPropsPhaseConstRef = self.cp.phaseProps(2)
+        # sol_props: ChemicalPropsPhaseConstRef = self.cp.phaseProps(1)
+        # sol_props2: ChemicalPropsPhaseConstRef = self.cp.phaseProps(2)
         aprops = AqueousProps(self.cp)
 
         '''Hardcode'''
         Na = self.cp.speciesAmount('Na+')
         Cl = self.cp.speciesAmount('Cl-')
-        CO3 = self.cp.speciesAmount('CO3-')
+        # CO3 = self.cp.speciesAmount('CO3-')
         H = self.cp.speciesAmount('H+')
         OH = self.cp.speciesAmount('OH-')
-        Al = self.cp.speciesAmount('Al+3')
-        H3SiO4 = self.cp.speciesAmount('H3SiO4-')
-        solid = self.cp.speciesAmount('Kaolinite')
-        solid2 = self.cp.speciesAmount('Quartz')
+        # Al = self.cp.speciesAmount('Al+3')
+        # H3SiO4 = self.cp.speciesAmount('H3SiO4-')
+        # solid = self.cp.speciesAmount('Kaolinite')
+        # solid2 = self.cp.speciesAmount('Quartz')
         H2O_aq = self.cp.speciesAmount('H2O')
         H2O = H2O_aq  # + H2O_g
-        HCO3 = self.cp.speciesAmount('HCO3-')
-        AlOH4 = self.cp.speciesAmount('Al(OH)4-')
-        H4SiO4 =  self.cp.speciesAmount('H4SiO4')
+        # HCO3 = self.cp.speciesAmount('HCO3-')
+        # AlOH4 = self.cp.speciesAmount('Al(OH)4-')
+        # H4SiO4 =  self.cp.speciesAmount('H4SiO4')
+        NaOH = self.cp.speciesAmount('NaOH')
 
         total_mol = self.cp.amount()
         total_mol_aq = liq_props.amount()
-        total_mol_sol = sol_props.amount()+sol_props2.amount()
+        #total_mol_sol = sol_props.amount()+sol_props2.amount()
 
         # mol_frac_gas_var = gas_props.speciesMoleFractions()
         mol_frac_aq_var = liq_props.speciesMoleFractions()
@@ -498,10 +506,10 @@ class Reaktoro:
         #             float(Cl/total_mol), float(X/total_mol), float(Nax/total_mol), float(Cax/total_mol)]
         # mol_frac_gas = [float(mol_frac_gas_var[0]), float(mol_frac_gas_var[1]), 0, 0, 0, 0, 0, 0]
         mol_frac_aq = [float(mol_frac_aq_var[0]), float(mol_frac_aq_var[1]), float(mol_frac_aq_var[2]),
-                       float(mol_frac_aq_var[3]), float(mol_frac_aq_var[4]), float(mol_frac_aq_var[5]),
-                       float(mol_fraq_aq_var[6]), float(mol_fraq_aq_var[7]), float(mol_fraq_aq_var[8]),
-                       float(mol_fraq_aq_var[9]), float(mol_fraq_aq_var[10]), 0 ,0]
-        mol_frac_sol = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, float(solid/total_mol_sol), float(solid2/total_mol_sol)]
+                       float(mol_frac_aq_var[3]), float(mol_frac_aq_var[4]), float(mol_frac_aq_var[5])] #,
+        #               float(mol_fraq_aq_var[6]), float(mol_fraq_aq_var[7]), float(mol_fraq_aq_var[8]),
+        #               float(mol_fraq_aq_var[9]), float(mol_fraq_aq_var[10]), 0 ,0]
+        #mol_frac_sol = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, float(solid/total_mol_sol), float(solid2/total_mol_sol)]
 
         # Partial molar volume equation: V_tot = total_mol * sum(molar_frac*partial mole volume)
         # partial_mol_vol_aq = np.zeros(len(mol_frac_aq))
@@ -514,7 +522,7 @@ class Reaktoro:
         volume_aq = liq_props.volume()
         #volume_ion = 1e-5 * (total_mol_sol/total_mol)
         # volume_ion = (1/10)*volume_aq
-        volume_solid = sol_props.volume() + sol_props2.volume()
+        #volume_solid = sol_props.volume() + sol_props2.volume()
         volume_tot = self.cp.volume()
 
         # mass_aq = liq_props.mass() + self.cp.speciesMass('X-')
@@ -525,39 +533,38 @@ class Reaktoro:
         density_aq = liq_props.density()
         #density_ion = 2700
         # density = self.cp.density()
-        density_solid = (2 * sol_props.density() * sol_props2.density()) / (sol_props.density()+sol_props2.density())
+        #density_solid = (2 * sol_props.density() * sol_props2.density()) / (sol_props.density()+sol_props2.density())
 
         # S_g = volume_gas / volume_tot
         S_w = volume_aq / volume_tot
         # S_ion = volume_ion / volume_tot
         #S_ion = volume_ion / volume_tot
-        S_s = volume_solid / volume_tot
+        #S_s = volume_solid / volume_tot
 
         # V = (density_gas * S_g) / (density_gas * S_g + density_aq * S_w + density_solid * S_s)
         # L = (density_aq * S_w) / (density_gas * S_g + density_aq * S_w + density_solid * S_s)
-        L = (density_aq * S_w) / (density_solid * S_s + density_aq * S_w)
-        S = (density_solid * S_s) / (density_aq * S_w + density_solid * S_s)
+        #L = (density_aq * S_w) / (density_solid * S_s + density_aq * S_w)
+        #S = (density_solid * S_s) / (density_aq * S_w + density_solid * S_s)
         # nu = [float(V), float(L), float(S)]
-        nu = [float(L), float(S)]#, float(ion)]
+        nu = [1]#[float(L), float(S)]#, float(ion)]
         # x = [mol_frac_gas, mol_frac_aq, mol_frac_sol]
-        x = [mol_frac_aq, mol_frac_sol]
+        x = mol_frac_aq#, mol_frac_sol]
         '''Hardcode'''
         # z_c = [float(H2O / total_mol), float(CO2 / total_mol),
         #        float(Na / total_mol), float(Cl / total_mol), float(Na2 / total_mol), float(Cl2 / total_mol),
         #        float(solid / total_mol), float(solid2 / total_mol)]
         #        'Na+', 'Cl-', 'CO3-2', 'H+', 'OH-', 'Al+3', 'H3SiO4-', 'H2O', 'HCO3-', 'Al(OH)4-', 'H4SiO4'
 
-        z_c = [float(Na / total_mol), float(Cl / total_mol), float(CO3 / total_mol), float(H / total_mol),
-               float(OH / total_mol), float(Al / total_mol), float(H3SiO4 / total_mol), float(H2O/total_mol),
-               float(HCO3/total_mol), float(AlOH4/total_mol), float(H4SiO4/total_mol), float(solid/total_mol),
-               float(solid2/total_mol)]
+        z_c = [float(OH / total_mol), float(H / total_mol), float(Na / total_mol), float(Cl / total_mol),
+               float(H2O/total_mol), float(NaOH/total_mol)]
 # 'Na+', 'Cl-', 'CO3-2', 'H+', 'OH-', 'Al+3', 'H3SiO4-'
 # 'H2O', 'Na+', 'Cl-', 'CO3-2', 'H+', 'OH-', 'Al+3', 'HCO3-', 'Al(OH)4-', 'H4SiO4', 'H3SiO4-', 'Kaolinite', 'Quartz'
         # density = [float(density_gas), float(density_aq), float(density_solid)]
         # if density < 0 or density > 1500:
         #     print(z_c)
         #     print(density)
-        density = [density_aq, density_solid]  #, density_ion]
+        density = [density_aq]  # , density_solid]  #, density_ion]
+
         if self.failure:
             print('z_c', z_c)
         return nu, x, z_c, density

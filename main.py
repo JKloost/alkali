@@ -49,26 +49,28 @@ nc = n.property_container.nc + n.thermal
 ne = n.property_container.n_e
 nb = n.reservoir.nb
 P = Xn[0:ne*nb:ne]
+plt.plot(P)
+plt.show()
 z1_darts = Xn[1:ne*nb:ne]
 z2_darts = Xn[2:ne*nb:ne]
 z3_darts = Xn[3:ne*nb:ne]
-z4_darts = Xn[4:ne*nb:ne]
+#z4_darts = Xn[4:ne*nb:ne]
 # z5_darts = Xn[5:ne*nb:ne]
-z5_darts = np.zeros(len(z1_darts))
+z4_darts = np.zeros(len(z1_darts))
 for i in range(len(z1_darts)):
-    z5_darts[i] = 1 - z1_darts[i] - z2_darts[i] - z3_darts[i] - z4_darts[i]# - z5_darts[i]
+    z4_darts[i] = 1 - z1_darts[i] - z2_darts[i] - z3_darts[i]# - z4_darts[i]# - z5_darts[i]
 nu, x, z_c, density = [], [], [], []
-H2O, Ca, Na, Cl, X, Nax, Cax, Halite = [], [], [], [], [], [], [], []
+H2O, Ca, Na, Cl, OH, H, NaOH, Halite = [], [], [], [], [], [], [], []
 for i in range(len(P)):
-    z_e = [z1_darts[i], z2_darts[i], z3_darts[i], z4_darts[i], z5_darts[i]]#, z6_darts[i]]
+    z_e = [z1_darts[i], z2_darts[i], z3_darts[i], z4_darts[i]]#, z5_darts[i]]#, z6_darts[i]]
     nu_output, x_output, z_c_output, density_output = n.flash_properties(z_e, 320, P[i])  # itor
-    H2O.append(z_c_output[0])
-    Ca.append(z_c_output[1])
+    OH.append(z_c_output[0])
+    H.append(z_c_output[1])
     Na.append(z_c_output[2])
     Cl.append(z_c_output[3])
-    X.append(z_c_output[4])
-    Nax.append(z_c_output[5])
-    Cax.append(z_c_output[6])
+    H2O.append(z_c_output[4])
+    NaOH.append(z_c_output[5])
+    #Cax.append(z_c_output[6])
     # Halite.append(z_c_output[7])
     nu.append(nu_output[0])
     x.append(x_output)
@@ -80,11 +82,11 @@ plt.plot(P, label='pressure')
 plt.legend()
 plt.show()
 plt.figure(2)
-#plt.plot(z1_darts, label='H2O')
-plt.plot(z2_darts, label='Ca++')
+plt.plot(z1_darts, label='OH-')
+plt.plot(z2_darts, label='H+')
 plt.plot(z3_darts, label='Na+')
 plt.plot(z4_darts, label='Cl-')
-plt.plot(z5_darts, label='X-')
+#plt.plot(z5_darts, label='X-')
 # plt.yscale('log')
 #plt.plot(z6_darts, label='CaX2')
 plt.legend()
@@ -93,10 +95,12 @@ plt.xlabel('x dimensionless')
 plt.title('Composition', y=1)
 plt.show()
 plt.figure(3)
-#plt.plot(H2O, label='H2O')
-plt.plot(Ca, label='Ca++')
+plt.plot(H2O, label='H2O')
+plt.plot(OH, label='OH-')
+plt.plot(H, label='H+')
 plt.plot(Na, label='Na+')
 plt.plot(Cl, label='Cl-')
+plt.plot(NaOH, label='NaOH')
 # plt.plot(X, label='X-')
 # plt.plot(Nax, label='NaX')
 # plt.plot(Cax, label='CaX2')
