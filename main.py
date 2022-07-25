@@ -49,8 +49,8 @@ nc = n.property_container.nc + n.thermal
 ne = n.property_container.n_e
 nb = n.reservoir.nb
 P = Xn[0:ne*nb:ne]
-plt.plot(P)
-plt.show()
+# plt.plot(P)
+# plt.show()
 z1_darts = Xn[1:ne*nb:ne]
 z2_darts = Xn[2:ne*nb:ne]
 z3_darts = Xn[3:ne*nb:ne]
@@ -69,7 +69,7 @@ for i in range(len(P)):
     Na.append(z_c_output[2])
     Cl.append(z_c_output[3])
     H2O.append(z_c_output[4])
-    NaOH.append(z_c_output[5])
+    #NaOH.append(z_c_output[5])
     #Cax.append(z_c_output[6])
     # Halite.append(z_c_output[7])
     nu.append(nu_output[0])
@@ -95,12 +95,12 @@ plt.xlabel('x dimensionless')
 plt.title('Composition', y=1)
 plt.show()
 plt.figure(3)
-plt.plot(H2O, label='H2O')
+#plt.plot(H2O, label='H2O')
 plt.plot(OH, label='OH-')
 plt.plot(H, label='H+')
 plt.plot(Na, label='Na+')
 plt.plot(Cl, label='Cl-')
-plt.plot(NaOH, label='NaOH')
+#plt.plot(NaOH, label='NaOH')
 # plt.plot(X, label='X-')
 # plt.plot(Nax, label='NaX')
 # plt.plot(Cax, label='CaX2')
