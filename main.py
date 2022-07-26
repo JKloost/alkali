@@ -15,7 +15,7 @@ import os
 redirect_darts_output('run.log')
 n = Model()
 n.init()
-n.run_python(200, timestep_python=True)
+n.run_python(100, timestep_python=True)
 n.print_timers()
 n.print_stat()
 # time_data = pd.DataFrame.from_dict(n.physics.engine.time_data)
@@ -52,26 +52,26 @@ P = Xn[0:ne*nb:ne]
 # plt.plot(P)
 # plt.show()
 z1_darts = Xn[1:ne*nb:ne]
-z2_darts = Xn[2:ne*nb:ne]
-z3_darts = Xn[3:ne*nb:ne]
+# z2_darts = Xn[2:ne*nb:ne]
+# z3_darts = Xn[3:ne*nb:ne]
 #z4_darts = Xn[4:ne*nb:ne]
 # z5_darts = Xn[5:ne*nb:ne]
-z4_darts = np.zeros(len(z1_darts))
+z2_darts = np.zeros(len(z1_darts))
 for i in range(len(z1_darts)):
-    z4_darts[i] = 1 - z1_darts[i] - z2_darts[i] - z3_darts[i]# - z4_darts[i]# - z5_darts[i]
+    z2_darts[i] = 1 - z1_darts[i]# - z2_darts[i] - z3_darts[i]# - z4_darts[i]# - z5_darts[i]
 nu, x, z_c, density = [], [], [], []
 H2O, Ca, Na, Cl, OH, H, NaOH, Halite = [], [], [], [], [], [], [], []
 for i in range(len(P)):
-    z_e = [z1_darts[i], z2_darts[i], z3_darts[i], z4_darts[i]]#, z5_darts[i]]#, z6_darts[i]]
+    z_e = [z1_darts[i], z2_darts[i]]#, z3_darts[i], z4_darts[i]]#, z5_darts[i]]#, z6_darts[i]]
     nu_output, x_output, z_c_output, density_output = n.flash_properties(z_e, 320, P[i])  # itor
     OH.append(z_c_output[0])
     H.append(z_c_output[1])
-    Na.append(z_c_output[2])
-    Cl.append(z_c_output[3])
-    H2O.append(z_c_output[4])
+    #Na.append(z_c_output[2])
+    #Cl.append(z_c_output[3])
+    H2O.append(z_c_output[2])
     #NaOH.append(z_c_output[5])
     #Cax.append(z_c_output[6])
-    # Halite.append(z_c_output[7])
+    #Halite.append(z_c_output[5])
     nu.append(nu_output[0])
     x.append(x_output)
     z_c.append(z_c_output)
@@ -84,8 +84,8 @@ plt.show()
 plt.figure(2)
 plt.plot(z1_darts, label='OH-')
 plt.plot(z2_darts, label='H+')
-plt.plot(z3_darts, label='Na+')
-plt.plot(z4_darts, label='Cl-')
+# plt.plot(z3_darts, label='Na+')
+# plt.plot(z4_darts, label='Cl-')
 #plt.plot(z5_darts, label='X-')
 # plt.yscale('log')
 #plt.plot(z6_darts, label='CaX2')
@@ -95,16 +95,13 @@ plt.xlabel('x dimensionless')
 plt.title('Composition', y=1)
 plt.show()
 plt.figure(3)
-#plt.plot(H2O, label='H2O')
+plt.plot(H2O, label='H2O')
 plt.plot(OH, label='OH-')
 plt.plot(H, label='H+')
-plt.plot(Na, label='Na+')
-plt.plot(Cl, label='Cl-')
-#plt.plot(NaOH, label='NaOH')
-# plt.plot(X, label='X-')
-# plt.plot(Nax, label='NaX')
-# plt.plot(Cax, label='CaX2')
+# plt.plot(Na, label='Na+')
+# plt.plot(Cl, label='Cl-')
 # plt.plot(Halite, label='Halite')
+plt.yscale('log')
 plt.legend()
 plt.ylabel('z_c')
 plt.xlabel('x dimensionless')
