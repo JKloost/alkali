@@ -35,8 +35,8 @@ class Model(DartsModel):
 
         """Physical properties"""
         # Create property containers:
-        components_name = ['OH-', 'H+', 'H2O']
-        elements_name = ['OH-', 'H+']
+        components_name = ['OH-', 'H+', 'Cl-', 'H2O']
+        elements_name = ['OH-', 'H+', 'Cl-']
         # aqueous_phase = ['H2O(aq)', 'CO2(aq)', 'Ca+2', 'CO3-2', 'Na+', 'Cl-']
         # gas_phase = ['H2O(g)', 'CO2(g)']
         # solid_phase = ['Calcite', 'Halite']
@@ -55,8 +55,9 @@ class Model(DartsModel):
         #                   [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
         #                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
         #                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
-        E_mat = np.array([[1, 0, 1],
-                          [0, 1, 1]])
+        E_mat = np.array([[1, 0, 0, 1],
+                          [0, 1, 0, 1],
+                          [0, 0, 1, 0]])
         # E_mat = np.array([[1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
         #                     [0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0],
         #                   [0, 0, 1, 0, 0, 1, 0, 4, 0, 0, 0],
@@ -69,10 +70,10 @@ class Model(DartsModel):
         for i in range(len(Mw)):
             component = Species(str(components_name[i]))
             Mw[i] = component.molarMass()*1000
-        aq_species = StringList(['OH-', 'H+', 'H2O(aq)'])
+        aq_species = StringList(['OH-', 'H+', 'Cl-', 'H2O(aq)'])
         sol_species = StringList([])
         aq = AqueousPhase(aq_species)
-        #aq.setActivityModel(ActivityModelHKF())
+        # aq.setActivityModel(ActivityModelHKF())
         # sol = MineralPhase(sol_species.data()[0])
         system_inj, system_ini = ChemicalSystem(self.db, aq), ChemicalSystem(self.db, aq)
         state_inj, state_ini = ChemicalState(system_inj), ChemicalState(system_ini)
@@ -80,8 +81,8 @@ class Model(DartsModel):
         specs_inj.temperature(), specs_ini.temperature()
         specs_inj.pressure(), specs_ini.pressure()
         specs_inj.pH(), specs_ini.pH()
-        #specs_inj.charge(), specs_ini.charge()
-        #specs_inj.openTo('Cl-'), specs_ini.openTo('Cl-')
+        # specs_inj.charge(), specs_ini.charge()
+        # specs_inj.openTo('Cl-'), specs_ini.openTo('Cl-')
         solver_inj = EquilibriumSolver(specs_inj)
         solver_ini = EquilibriumSolver(specs_ini)
 
@@ -89,12 +90,13 @@ class Model(DartsModel):
 
         conditions_inj.temperature(320, 'kelvin'),  conditions_ini.temperature(320, 'kelvin')
         conditions_inj.pressure(200, 'bar'),        conditions_ini.pressure(200, 'bar')
-        conditions_inj.pH(5),                       conditions_ini.pH(7)
-        #conditions_inj.charge(0),                   conditions_ini.charge(0)
+        conditions_inj.pH(3),                       conditions_ini.pH(7)
+        # conditions_inj.charge(0),                   conditions_ini.charge(0)
 
         state_inj.set('H2O(aq)', 1, 'kg'),              state_ini.set('H2O(aq)', 1, 'kg')
-        # state_inj.set('Na+', 4.5, 'mol'),           state_ini.set('Na+', 10, 'mol')
-        # state_inj.set('Cl-', 4.5, 'mol'),           state_ini.set('Cl-', 10, 'mol')
+        # state_inj.set('Na+', 4.5, 'mol'),             state_ini.set('Na+', 10, 'mol')
+        # state_inj.set('H+', 1, 'umol'),                  state_ini.set('H+', 1, 'umol')
+        state_inj.set('Cl-', 1, 'umol'),                 state_ini.set('Cl-', 1, 'umol')
 
         solver_inj.solve(state_inj, conditions_inj)
         solver_ini.solve(state_ini, conditions_ini)
@@ -162,7 +164,7 @@ class Model(DartsModel):
         self.params.max_ts = 10
         self.params.mult_ts = 2
 
-        self.params.tolerance_newton = 1e-2
+        self.params.tolerance_newton = 1e-3
         self.params.tolerance_linear = 1e-6
         self.params.max_i_newton = 10
         self.params.max_i_linear = 50
@@ -487,8 +489,8 @@ class Reaktoro:
         # db = PhreeqcDatabase.fromFile("phreeqc_cat_ion.dat")
 
         '''Hardcode'''
-        self.aq_comp = StringList(['OH-', 'H+', 'H2O(aq)'])
-        self.ne = 2
+        self.aq_comp = StringList(['OH-', 'H+', 'Cl-', 'H2O(aq)'])
+        self.ne = 3
         # self.sol_comp = ['Halite']
         aq = AqueousPhase(self.aq_comp)
         # for i in range(len(self.sol_comp)):
@@ -533,9 +535,9 @@ class Reaktoro:
 
         '''Hardcode'''
         # Na = self.cp.speciesAmount('Na+')
-        # Cl = self.cp.speciesAmount('Cl-')
         H = self.cp.speciesAmount('H+')
         OH = self.cp.speciesAmount('OH-')
+        Cl = self.cp.speciesAmount('Cl-')
         H2O = self.cp.speciesAmount('H2O(aq)')
         # Halite = self.cp.speciesAmount('Halite')
 
@@ -553,7 +555,7 @@ class Reaktoro:
         # mol_frac_aq = [float(mol_frac_aq_var[0]), float(mol_frac_aq_var[1]), float(mol_frac_aq_var[2]),
         #                float(mol_frac_aq_var[3]), float(mol_frac_aq_var[4]), float(mol_frac_aq_var[5])]
         # mol_frac_sol = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, float(solid/total_mol_sol), float(solid2/total_mol_sol)]
-        mol_frac_aq = [float(OH/total_mol_aq), float(H/total_mol_aq), float(H2O/total_mol_aq)]
+        mol_frac_aq = [float(OH/total_mol_aq), float(H/total_mol_aq), float(Cl/total_mol_aq), float(H2O/total_mol_aq)]
         # mol_frac_sol = [0, 0, 0, 0, 0, 1]
 
         # Partial molar volume equation: V_tot = total_mol * sum(molar_frac*partial mole volume)
@@ -594,4 +596,5 @@ class Reaktoro:
 
         if self.failure:
             print('z_c', z_c)
+        density = [1050]
         return nu, x, z_c, density
