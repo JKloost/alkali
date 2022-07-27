@@ -35,8 +35,8 @@ class Model(DartsModel):
 
         """Physical properties"""
         # Create property containers:
-        components_name = ['OH-', 'H+', 'Cl-', 'H2O']
-        elements_name = ['OH-', 'H+', 'Cl-']
+        components_name = ['OH-', 'H+', 'Na+', 'Cl-', 'H2O']
+        elements_name = ['OH-', 'H+', 'Na+', 'Cl-']
         # aqueous_phase = ['H2O(aq)', 'CO2(aq)', 'Ca+2', 'CO3-2', 'Na+', 'Cl-']
         # gas_phase = ['H2O(g)', 'CO2(g)']
         # solid_phase = ['Calcite', 'Halite']
@@ -55,9 +55,10 @@ class Model(DartsModel):
         #                   [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
         #                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
         #                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
-        E_mat = np.array([[1, 0, 0, 1],
-                          [0, 1, 0, 1],
-                          [0, 0, 1, 0]])
+        E_mat = np.array([[1, 0, 0, 0, 1],
+                          [0, 1, 0, 0, 1],
+                          [0, 0, 1, 0, 0],
+                          [0, 0, 0, 1, 0]])
         # E_mat = np.array([[1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
         #                     [0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0],
         #                   [0, 0, 1, 0, 0, 1, 0, 4, 0, 0, 0],
@@ -70,7 +71,7 @@ class Model(DartsModel):
         for i in range(len(Mw)):
             component = Species(str(components_name[i]))
             Mw[i] = component.molarMass()*1000
-        aq_species = StringList(['OH-', 'H+', 'Cl-', 'H2O(aq)'])
+        aq_species = StringList(['OH-', 'H+', 'Na+', 'Cl-', 'H2O(aq)'])
         sol_species = StringList([])
         aq = AqueousPhase(aq_species)
         # aq.setActivityModel(ActivityModelHKF())
@@ -94,9 +95,9 @@ class Model(DartsModel):
         # conditions_inj.charge(0),                   conditions_ini.charge(0)
 
         state_inj.set('H2O(aq)', 1, 'kg'),              state_ini.set('H2O(aq)', 1, 'kg')
-        # state_inj.set('Na+', 4.5, 'mol'),             state_ini.set('Na+', 10, 'mol')
+        state_inj.set('Na+', 1, 'umol'),             state_ini.set('Na+', 40, 'umol')
         # state_inj.set('H+', 1, 'umol'),                  state_ini.set('H+', 1, 'umol')
-        state_inj.set('Cl-', 1, 'umol'),                 state_ini.set('Cl-', 1, 'umol')
+        state_inj.set('Cl-', 1, 'umol'),                 state_ini.set('Cl-', 40, 'umol')
 
         solver_inj.solve(state_inj, conditions_inj)
         solver_ini.solve(state_ini, conditions_ini)
@@ -151,11 +152,8 @@ class Model(DartsModel):
 
         #                  H2O,                     CO2,    Ca++,       CO3--,      Na+, Cl-
         #                  Oh- H+ Na+ Cl-
-        print(z_e_ini, z_e_inj)
         self.ini_stream = z_e_ini[:-1]
         self.inj_stream = z_e_inj[:-1]
-        print(self.ini_stream, self.inj_stream)
-        print(sum(self.ini_stream), sum(self.inj_stream))
         # self.ini_stream = [0.5-self.zero, 0.5, self.zero]  # 0.002
         # self.inj_stream = [0.51-self.zero, 0.49, self.zero]  # 0.000
         # self.inj_stream = self.ini_stream
@@ -216,148 +214,6 @@ class Model(DartsModel):
     def flash_properties(self, ze, T, P):
         nu, x, zc, density = Flash_Reaktoro(ze, T, P, self.reaktoro)
         return nu, x, zc, density
-
-    def print_and_plot(self, filename):
-        nc = self.property_container.nc
-        Sg = np.zeros(self.reservoir.nb)
-        Ss = np.zeros(self.reservoir.nb)
-        X = np.zeros((self.reservoir.nb, nc - 1, 2))
-
-        rel_perm = np.zeros((self.reservoir.nb, 2))
-        visc = np.zeros((self.reservoir.nb, 2))
-        density = np.zeros((self.reservoir.nb, 3))
-        density_m = np.zeros((self.reservoir.nb, 3))
-
-        Xn = np.array(self.physics.engine.X, copy=True)
-
-        P = Xn[0:self.reservoir.nb * nc:nc]
-        z_caco3 = 1 - (
-                    Xn[1:self.reservoir.nb * nc:nc] + Xn[2:self.reservoir.nb * nc:nc] + Xn[3:self.reservoir.nb * nc:nc])
-
-        z_co2 = Xn[1:self.reservoir.nb * nc:nc] / (1 - z_caco3)
-        z_inert = Xn[2:self.reservoir.nb * nc:nc] / (1 - z_caco3)
-        z_h2o = Xn[3:self.reservoir.nb * nc:nc] / (1 - z_caco3)
-
-        for ii in range(self.reservoir.nb):
-            x_list = Xn[ii * nc:(ii + 1) * nc]
-            state = value_vector(x_list)
-            (sat, x, rho, rho_m, mu, kr, pc, ph) = self.property_container.evaluate(state)
-
-            rel_perm[ii, :] = kr
-            visc[ii, :] = mu
-            density[ii, :2] = rho
-            density_m[ii, :2] = rho_m
-
-            density[2] = self.property_container.solid_dens[-1]
-
-            X[ii, :, 0] = x[1][:-1]
-            X[ii, :, 1] = x[0][:-1]
-            Sg[ii] = sat[0]
-            Ss[ii] = z_caco3[ii]
-
-        # Write all output to a file:
-        with open(filename, 'w+') as f:
-            # Print headers:
-            print(
-                '//Gridblock\t gas_sat\t pressure\t C_m\t poro\t co2_liq\t co2_vap\t h2o_liq\t h2o_vap\t '
-                'ca_plus_co3_liq\t liq_dens\t vap_dens\t solid_dens\t liq_mole_dens\t vap_mole_dens\t solid_mole_dens'
-                '\t rel_perm_liq\t rel_perm_gas\t visc_liq\t visc_gas',
-                file=f)
-            print(
-                '//[-]\t [-]\t [bar]\t [kmole/m3]\t [-]\t [-]\t [-]\t [-]\t [-]\t [-]\t [kg/m3]\t [kg/m3]\t [kg/m3]\t '
-                '[kmole/m3]\t [kmole/m3]\t [kmole/m3]\t [-]\t [-]\t [cP]\t [cP]',
-                file=f)
-            for ii in range(self.reservoir.nb):
-                print(
-                    '{:d}\t {:6.5f}\t {:7.5f}\t {:7.5f}\t {:6.5f}\t {:6.5f}\t {:6.5f}\t {:6.5f}\t {:6.5f}\t {:6.5f}\t '
-                    '{:8.5f}\t {:8.5f}\t {:8.5f}\t {:7.5f}\t {:7.5f}\t {:7.5f}\t {:6.5f}\t {:6.5f}\t {:6.5f}\t '
-                    '{:6.5f}'.format(
-                        ii, Sg[ii], P[ii], Ss[ii] * density_m[ii, 2], 1 - Ss[ii], X[ii, 0, 0], X[ii, 0, 1], X[ii, 2, 0],
-                        X[ii, 2, 1], X[ii, 1, 0],
-                        density[ii, 0], density[ii, 1], density[ii, 2], density_m[ii, 0], density_m[ii, 1],
-                        density_m[ii, 2],
-                        rel_perm[ii, 0], rel_perm[ii, 1], visc[ii, 0], visc[ii, 1]), file=f)
-
-        """ start plots """
-
-        font_dict_title = {'family': 'sans-serif',
-                           'color': 'black',
-                           'weight': 'normal',
-                           'size': 14,
-                           }
-
-        font_dict_axes = {'family': 'monospace',
-                          'color': 'black',
-                          'weight': 'normal',
-                          'size': 14,
-                          }
-
-        fig, axs = plt.subplots(3, 3, figsize=(12, 10), dpi=200, facecolor='w', edgecolor='k')
-        """ sg and x """
-        axs[0][0].plot(z_co2, 'b')
-        axs[0][0].set_xlabel('x [m]', font_dict_axes)
-        axs[0][0].set_ylabel('$z_{CO_2}$ [-]', font_dict_axes)
-        axs[0][0].set_title('Fluid composition', fontdict=font_dict_title)
-
-        axs[0][1].plot(z_h2o, 'b')
-        axs[0][1].set_xlabel('x [m]', font_dict_axes)
-        axs[0][1].set_ylabel('$z_{H_2O}$ [-]', font_dict_axes)
-        axs[0][1].set_title('Fluid composition', fontdict=font_dict_title)
-
-        axs[0][2].plot(z_inert, 'b')
-        axs[0][2].set_xlabel('x [m]', font_dict_axes)
-        axs[0][2].set_ylabel('$z_{w, Ca+2} + z_{w, CO_3-2}$ [-]', font_dict_axes)
-        axs[0][2].set_title('Fluid composition', fontdict=font_dict_title)
-
-        axs[1][0].plot(X[:, 0, 0], 'b')
-        axs[1][0].set_xlabel('x [m]', font_dict_axes)
-        axs[1][0].set_ylabel('$x_{w, CO_2}$ [-]', font_dict_axes)
-        axs[1][0].set_title('Liquid mole fraction', fontdict=font_dict_title)
-
-        axs[1][1].plot(X[:, 2, 0], 'b')
-        axs[1][1].set_xlabel('x [m]', font_dict_axes)
-        axs[1][1].set_ylabel('$x_{w, H_2O}$ [-]', font_dict_axes)
-        axs[1][1].set_title('Liquid mole fraction', fontdict=font_dict_title)
-
-        axs[1][2].plot(X[:, 1, 0], 'b')
-        axs[1][2].set_xlabel('x [m]', font_dict_axes)
-        axs[1][2].set_ylabel('$x_{w, Ca+2} + x_{w, CO_3-2}$ [-]', font_dict_axes)
-        axs[1][2].set_title('Liquid mole fraction', fontdict=font_dict_title)
-
-        axs[2][0].plot(P, 'b')
-        axs[2][0].set_xlabel('x [m]', font_dict_axes)
-        axs[2][0].set_ylabel('$p$ [bar]', font_dict_axes)
-        axs[2][0].set_title('Pressure', fontdict=font_dict_title)
-
-        axs[2][1].plot(Sg, 'b')
-        axs[2][1].set_xlabel('x [m]', font_dict_axes)
-        axs[2][1].set_ylabel('$s_g$ [-]', font_dict_axes)
-        axs[2][1].set_title('Gas saturation', fontdict=font_dict_title)
-
-        axs[2][2].plot(1 - Ss, 'b')
-        axs[2][2].set_xlabel('x [m]', font_dict_axes)
-        axs[2][2].set_ylabel('$\phi$ [-]', font_dict_axes)
-        axs[2][2].set_title('Porosity', fontdict=font_dict_title)
-
-        left = 0.05  # the left side of the subplots of the figure
-        right = 0.95  # the right side of the subplots of the figure
-        bottom = 0.05  # the bottom of the subplots of the figure
-        top = 0.95  # the top of the subplots of the figure
-        wspace = 0.25  # the amount of width reserved for blank space between subplots
-        hspace = 0.25  # the amount of height reserved for white space between subplots
-        plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
-
-        for ii in range(3):
-            for jj in range(3):
-                for tick in axs[ii][jj].xaxis.get_major_ticks():
-                    tick.label.set_fontsize(20)
-
-                for tick in axs[ii][jj].yaxis.get_major_ticks():
-                    tick.label.set_fontsize(20)
-
-        plt.tight_layout()
-        plt.savefig("results_kinetic_brief.pdf")
-        plt.show()
 
 
 class model_properties(property_container):
@@ -468,10 +324,10 @@ def comp_correction(z, min_z):
 
 
 def Flash_Reaktoro(z_e, T, P, reaktoro):
-    # if z_e[2] != z_e[3]:
-    #     ze_new = (z_e[2]+z_e[3])/2
-    #     z_e[2] = ze_new
-    #     z_e[3] = ze_new
+    if z_e[2] != z_e[3]:
+        ze_new = (z_e[2]+z_e[3])/2
+        z_e[2] = ze_new
+        z_e[3] = ze_new
     #     # z_e = [float(i) / sum(z_e) for i in z_e]
     # if z_e[0] != z_e[1]:
     #     ze_new = (z_e[1] + z_e[0]) / 2
@@ -489,8 +345,9 @@ class Reaktoro:
         # db = PhreeqcDatabase.fromFile("phreeqc_cat_ion.dat")
 
         '''Hardcode'''
-        self.aq_comp = StringList(['OH-', 'H+', 'Cl-', 'H2O(aq)'])
-        self.ne = 3
+        self.aq_comp = StringList(['OH-', 'H+', 'Na+', 'Cl-', 'H2O(aq)'])
+        self.ne = 4
+
         # self.sol_comp = ['Halite']
         aq = AqueousPhase(self.aq_comp)
         # for i in range(len(self.sol_comp)):
@@ -534,7 +391,7 @@ class Reaktoro:
         aprops = AqueousProps(self.cp)
 
         '''Hardcode'''
-        # Na = self.cp.speciesAmount('Na+')
+        Na = self.cp.speciesAmount('Na+')
         H = self.cp.speciesAmount('H+')
         OH = self.cp.speciesAmount('OH-')
         Cl = self.cp.speciesAmount('Cl-')
@@ -555,7 +412,8 @@ class Reaktoro:
         # mol_frac_aq = [float(mol_frac_aq_var[0]), float(mol_frac_aq_var[1]), float(mol_frac_aq_var[2]),
         #                float(mol_frac_aq_var[3]), float(mol_frac_aq_var[4]), float(mol_frac_aq_var[5])]
         # mol_frac_sol = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, float(solid/total_mol_sol), float(solid2/total_mol_sol)]
-        mol_frac_aq = [float(OH/total_mol_aq), float(H/total_mol_aq), float(Cl/total_mol_aq), float(H2O/total_mol_aq)]
+        mol_frac_aq = [float(OH/total_mol_aq), float(H/total_mol_aq), float(Na/total_mol_aq), float(Cl/total_mol_aq),
+                       float(H2O/total_mol_aq)]
         # mol_frac_sol = [0, 0, 0, 0, 0, 1]
 
         # Partial molar volume equation: V_tot = total_mol * sum(molar_frac*partial mole volume)
@@ -592,9 +450,10 @@ class Reaktoro:
         z_c = np.zeros(len(mol_frac_aq))
         for i in range(len(z_c)):
             z_c[i] = float(self.cp.speciesAmount(i)/total_mol)
-        density = [float(density_aq)] #, float(density_solid)]
+        # density = [float(density_aq)] #, float(density_solid)]
+        print(density)
 
         if self.failure:
             print('z_c', z_c)
-        density = [1050]
+        density = [1100]
         return nu, x, z_c, density
