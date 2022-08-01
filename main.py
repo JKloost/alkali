@@ -10,12 +10,12 @@ from darts.engines import value_vector, redirect_darts_output
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import os
-#import cProfile
+# import cProfile
 
 redirect_darts_output('run.log')
 n = Model()
 n.init()
-n.run_python(100, timestep_python=True)
+n.run_python(40, timestep_python=True)
 n.print_timers()
 n.print_stat()
 # time_data = pd.DataFrame.from_dict(n.physics.engine.time_data)
@@ -55,15 +55,18 @@ for i in range(1, ne):
     z_darts[i-1] = Xn[i:ne*nb:ne]
 z_darts[-1] = np.ones(len(P)) - list(map(sum, zip(*z_darts[:-1])))
 
-nu, x, z_c, density = [], [], [], []
-H2O, Ca, Na, Cl, OH, H, NaOH, Halite = [], [], [], [], [], [], [], []
+nu, x, z_c, density, pH = [], [], [], [], []
+H2O, Ca, Na, Cl, OH, H, NaCO3, CO3, HCO3, Halite = [], [], [], [], [], [], [], [], [], []
 for i in range(len(P)):
-    nu_output, x_output, z_c_output, density_output = n.flash_properties(z_darts[:, i], 320, P[i])  # itor
+    nu_output, x_output, z_c_output, density_output, pH_output = n.flash_properties(z_darts[:, i], 320, P[i])  # itor
     OH.append(z_c_output[0])
     H.append(z_c_output[1])
     Na.append(z_c_output[2])
     Cl.append(z_c_output[3])
-    H2O.append(z_c_output[4])
+    CO3.append(z_c_output[4])
+    HCO3.append(z_c_output[5])
+    NaCO3.append(z_c_output[6])
+    H2O.append(z_c_output[-1])
     #NaOH.append(z_c_output[5])
     #Cax.append(z_c_output[6])
     #Halite.append(z_c_output[5])
@@ -71,6 +74,7 @@ for i in range(len(P)):
     x.append(x_output)
     z_c.append(z_c_output)
     density.append(density_output)
+    pH.append(pH_output)
 
 plt.figure(1)
 plt.plot(P, label='pressure')
@@ -94,6 +98,9 @@ plt.plot(OH, label='OH-')
 plt.plot(H, label='H+')
 plt.plot(Na, label='Na+')
 plt.plot(Cl, label='Cl-')
+plt.plot(CO3, label='CO3-2')
+plt.plot(HCO3, label='HCO3-')
+plt.plot()
 # plt.plot(Halite, label='Halite')
 plt.yscale('log')
 plt.legend()
@@ -102,9 +109,9 @@ plt.xlabel('x dimensionless')
 plt.title('Composition', y=1)
 plt.show()
 
-# plt.figure(4)
-# plt.plot(nu)
-# plt.ylabel('saturation')
-# plt.xlabel('x dimensionless')
-# plt.title('Water saturation', y=1)
-# plt.show()
+plt.figure(4)
+plt.plot(pH)
+plt.ylabel('pH')
+plt.xlabel('x dimensionless')
+plt.title('pH', y=1)
+plt.show()

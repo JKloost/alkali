@@ -18,8 +18,8 @@ class Model(DartsModel):
         self.timer.node["initialization"].start()
 
         self.reaktoro = Reaktoro()  # Initialise Reaktoro
-        # self.db = PhreeqcDatabase('phreeqc.dat')
-        self.db = SupcrtDatabase('supcrtbl')
+        self.db = PhreeqcDatabase.fromFile('C:/Users/Jaro/Documents/inversemodelling/code_thesis/DARTS_1D_model/Comp4George/phreeqc_cut.dat')
+        # self.db = SupcrtDatabase('supcrtbl')
         self.zero = 1e-11
         perm = 100  # / (1 - solid_init) ** trans_exp
         nx = 100
@@ -35,8 +35,8 @@ class Model(DartsModel):
 
         """Physical properties"""
         # Create property containers:
-        components_name = ['OH-', 'H+', 'Na+', 'Cl-', 'H2O']
-        elements_name = ['OH-', 'H+', 'Na+', 'Cl-']
+        components_name = ['OH-', 'H+', 'Na+', 'Cl-', 'CO3-2', 'HCO3-', 'NaCO3', 'H2O']
+        elements_name = ['OH-', 'H+', 'Na+', 'Cl-', 'CO3-2']
         # aqueous_phase = ['H2O(aq)', 'CO2(aq)', 'Ca+2', 'CO3-2', 'Na+', 'Cl-']
         # gas_phase = ['H2O(g)', 'CO2(g)']
         # solid_phase = ['Calcite', 'Halite']
@@ -55,10 +55,11 @@ class Model(DartsModel):
         #                   [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
         #                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
         #                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
-        E_mat = np.array([[1, 0, 0, 0, 1],
-                          [0, 1, 0, 0, 1],
-                          [0, 0, 1, 0, 0],
-                          [0, 0, 0, 1, 0]])
+        E_mat = np.array([[1, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+                          [0, 1, 0, 0, 0, 1, 0, 0, 1, 1],
+                          [0, 0, 1, 0, 0, 0, 1, 1, 1, 0],
+                          [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 1, 1, 1, 0, 1, 0]])
         # E_mat = np.array([[1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
         #                     [0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0],
         #                   [0, 0, 1, 0, 0, 1, 0, 4, 0, 0, 0],
@@ -71,7 +72,7 @@ class Model(DartsModel):
         for i in range(len(Mw)):
             component = Species(str(components_name[i]))
             Mw[i] = component.molarMass()*1000
-        aq_species = StringList(['OH-', 'H+', 'Na+', 'Cl-', 'H2O(aq)'])
+        aq_species = StringList(['OH-', 'H+', 'Na+', 'Cl-', 'CO3-2', 'HCO3-', 'NaCO3-', 'NaOH', 'NaHCO3', 'H2O'])
         sol_species = StringList([])
         aq = AqueousPhase(aq_species)
         # aq.setActivityModel(ActivityModelHKF())
@@ -82,8 +83,8 @@ class Model(DartsModel):
         specs_inj.temperature(), specs_ini.temperature()
         specs_inj.pressure(), specs_ini.pressure()
         specs_inj.pH(), specs_ini.pH()
-        # specs_inj.charge(), specs_ini.charge()
-        # specs_inj.openTo('Cl-'), specs_ini.openTo('Cl-')
+        #specs_inj.charge(), specs_ini.charge()
+        #specs_inj.openTo('Cl-'), specs_ini.openTo('Cl-')
         solver_inj = EquilibriumSolver(specs_inj)
         solver_ini = EquilibriumSolver(specs_ini)
 
@@ -91,13 +92,13 @@ class Model(DartsModel):
 
         conditions_inj.temperature(320, 'kelvin'),  conditions_ini.temperature(320, 'kelvin')
         conditions_inj.pressure(200, 'bar'),        conditions_ini.pressure(200, 'bar')
-        conditions_inj.pH(3),                       conditions_ini.pH(7)
-        # conditions_inj.charge(0),                   conditions_ini.charge(0)
+        conditions_inj.pH(11.1),                       conditions_ini.pH(7)
+        #conditions_inj.charge(0),                   conditions_ini.charge(0)
 
-        state_inj.set('H2O(aq)', 1, 'kg'),              state_ini.set('H2O(aq)', 1, 'kg')
-        state_inj.set('Na+', 1, 'umol'),             state_ini.set('Na+', 40, 'umol')
-        # state_inj.set('H+', 1, 'umol'),                  state_ini.set('H+', 1, 'umol')
-        state_inj.set('Cl-', 1, 'umol'),                 state_ini.set('Cl-', 40, 'umol')
+        state_inj.set('H2O', 1, 'kg'),              state_ini.set('H2O', 1, 'kg')
+        state_inj.set('Na+', 8270.6, 'mg'),             state_ini.set('Na+', 3931, 'mg')  # ppm
+        state_inj.set('CO3-2', 5660, 'mg'),               state_ini.set('CO3-2', 17.8, 'mg')
+        state_inj.set('Cl-', 33.5, 'mg'),                 state_ini.set('Cl-', 6068, 'mg')
 
         solver_inj.solve(state_inj, conditions_inj)
         solver_ini.solve(state_ini, conditions_ini)
@@ -162,7 +163,7 @@ class Model(DartsModel):
         self.params.max_ts = 10
         self.params.mult_ts = 2
 
-        self.params.tolerance_newton = 1e-3
+        self.params.tolerance_newton = 1e-1
         self.params.tolerance_linear = 1e-6
         self.params.max_i_newton = 10
         self.params.max_i_linear = 50
@@ -212,8 +213,8 @@ class Model(DartsModel):
         return sat[0]
 
     def flash_properties(self, ze, T, P):
-        nu, x, zc, density = Flash_Reaktoro(ze, T, P, self.reaktoro)
-        return nu, x, zc, density
+        nu, x, zc, density, pH = Flash_Reaktoro(ze, T, P, self.reaktoro)
+        return nu, x, zc, density, pH
 
 
 class model_properties(property_container):
@@ -232,7 +233,7 @@ class model_properties(property_container):
     def run_flash(self, pressure, ze):
         # Make every value that is the min_z equal to 0, as Reaktoro can work with 0, but not transport
         ze = comp_extension(ze, self.min_z)
-        self.nu, self.x, zc, density = Flash_Reaktoro(ze, 320, pressure, self.reaktoro)
+        self.nu, self.x, zc, density, pH = Flash_Reaktoro(ze, 320, pressure, self.reaktoro)
         zc = comp_correction(zc, self.min_z)
 
         # Solid phase always needs to be present
@@ -324,32 +325,33 @@ def comp_correction(z, min_z):
 
 
 def Flash_Reaktoro(z_e, T, P, reaktoro):
-    if z_e[2] != z_e[3]:
-        ze_new = (z_e[2]+z_e[3])/2
-        z_e[2] = ze_new
-        z_e[3] = ze_new
+    # if z_e[2] != z_e[3]:
+    #     ze_new = (z_e[2]+z_e[3])/2
+    #     z_e[2] = ze_new
+    #     z_e[3] = ze_new
     #     # z_e = [float(i) / sum(z_e) for i in z_e]
     # if z_e[0] != z_e[1]:
     #     ze_new = (z_e[1] + z_e[0]) / 2
     #     z_e[0] = ze_new
     #     z_e[1] = ze_new
     reaktoro.addingproblem(T, P, z_e)
-    nu, x, z_c, density = reaktoro.output()  # z_c order is determined by user, check if its the same order as E_mat
-    return nu, x, z_c, density
+    nu, x, z_c, density, pH = reaktoro.output()  # z_c order is determined by user, check if its the same order as E_mat
+    return nu, x, z_c, density, pH
 
 
 class Reaktoro:
     def __init__(self):
-        db = SupcrtDatabase("supcrtbl")
-        # db = PhreeqcDatabase('phreeqc.dat')
+        # db = SupcrtDatabase("supcrtbl")
+        db = PhreeqcDatabase.fromFile("phreeqc_cut.dat")
         # db = PhreeqcDatabase.fromFile("phreeqc_cat_ion.dat")
-
+        # db = PhreeqcDatabase.fromFile('logKFrom961_bdotFixedTuned.dat')
         '''Hardcode'''
-        self.aq_comp = StringList(['OH-', 'H+', 'Na+', 'Cl-', 'H2O(aq)'])
-        self.ne = 4
+        self.aq_comp = StringList(['OH-', 'H+', 'Na+', 'Cl-', 'CO3-2', 'HCO3-', 'NaCO3-', 'NaOH', 'NaHCO3', 'H2O'])
+        self.ne = 5  # Dont forget!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         # self.sol_comp = ['Halite']
         aq = AqueousPhase(self.aq_comp)
+        # aq.setActivityModel(ActivityModelHKF())
         # for i in range(len(self.sol_comp)):
         #     globals()['sol%s' % i] = MineralPhase(self.sol_comp[i])
         self.system = ChemicalSystem(db, aq)
@@ -359,7 +361,8 @@ class Reaktoro:
         # self.specs.charge()
         # self.specs.openTo("Cl-")
         self.solver = EquilibriumSolver(self.specs)
-        self.cp = type(object)
+        # self.cp = type(object)
+        self.cp: ChemicalProps = ChemicalProps(self.system)
         # self.specs.pH()
 
     def addingproblem(self, temp, pres, z_e):
@@ -375,7 +378,8 @@ class Reaktoro:
         conditions.pressure(pres, "bar")
         # conditions.charge(0)
         result = self.solver.solve(state, conditions)
-        self.cp: ChemicalProps = ChemicalProps(state)
+        # self.cp: ChemicalProps = ChemicalProps(state)
+        self.cp.update(state)
         self.failure = False
         if not result.optima.succeeded:
             print('Reaktoro did not find solution')
@@ -388,14 +392,19 @@ class Reaktoro:
         liq_props: ChemicalPropsPhaseConstRef = self.cp.phaseProps(0)
         # sol_props: ChemicalPropsPhaseConstRef = self.cp.phaseProps(1)
         # sol_props2: ChemicalPropsPhaseConstRef = self.cp.phaseProps(2)
-        aprops = AqueousProps(self.cp)
+        aprops = AqueousProps(self.cp)  # Only works when H+ is defined within the system
 
         '''Hardcode'''
         Na = self.cp.speciesAmount('Na+')
         H = self.cp.speciesAmount('H+')
         OH = self.cp.speciesAmount('OH-')
         Cl = self.cp.speciesAmount('Cl-')
-        H2O = self.cp.speciesAmount('H2O(aq)')
+        CO3 = self.cp.speciesAmount('CO3-2')
+        HCO3 = self.cp.speciesAmount('HCO3-')
+        NaCO3 = self.cp.speciesAmount('NaCO3-')
+        NaOH = self.cp.speciesAmount('NaOH')
+        NaHCO3 = self.cp.speciesAmount('NaHCO3')
+        H2O = self.cp.speciesAmount('H2O')
         # Halite = self.cp.speciesAmount('Halite')
 
         total_mol = self.cp.amount()
@@ -413,7 +422,8 @@ class Reaktoro:
         #                float(mol_frac_aq_var[3]), float(mol_frac_aq_var[4]), float(mol_frac_aq_var[5])]
         # mol_frac_sol = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, float(solid/total_mol_sol), float(solid2/total_mol_sol)]
         mol_frac_aq = [float(OH/total_mol_aq), float(H/total_mol_aq), float(Na/total_mol_aq), float(Cl/total_mol_aq),
-                       float(H2O/total_mol_aq)]
+                       float(CO3/total_mol_aq), float(HCO3/total_mol_aq), float(NaCO3/total_mol_aq),
+                       float(NaOH/total_mol_aq), float(NaHCO3/total_mol_aq), float(H2O/total_mol_aq)]
         # mol_frac_sol = [0, 0, 0, 0, 0, 1]
 
         # Partial molar volume equation: V_tot = total_mol * sum(molar_frac*partial mole volume)
@@ -432,7 +442,7 @@ class Reaktoro:
         # density_gas = gas_props.density()
         density_aq = liq_props.density()
         # density_solid = sol_props.density()
-        #density_solid = (2 * sol_props.density() * sol_props2.density()) / (sol_props.density()+sol_props2.density())
+        # density_solid = (2 * sol_props.density() * sol_props2.density()) / (sol_props.density()+sol_props2.density())
 
         # S_g = volume_gas / volume_tot
         S_w = volume_aq / volume_tot
@@ -450,10 +460,16 @@ class Reaktoro:
         z_c = np.zeros(len(mol_frac_aq))
         for i in range(len(z_c)):
             z_c[i] = float(self.cp.speciesAmount(i)/total_mol)
-        # density = [float(density_aq)] #, float(density_solid)]
-        print(density)
+        density = [float(density_aq)]  # , float(density_solid)]
+        #print(density)
 
+        # if float(density_aq) < 0:
+        #     print('negative volume')
+        #     print(float(density_aq))
+        #     print('z_c', z_c)
+        # print(density)
+        pH = aprops.pH()
         if self.failure:
             print('z_c', z_c)
-        density = [1100]
-        return nu, x, z_c, density
+        # density = [1050]
+        return nu, x, z_c, density, pH
