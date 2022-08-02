@@ -98,7 +98,7 @@ class Model(DartsModel):
         state_inj.set('H2O', 1, 'kg'),              state_ini.set('H2O', 1, 'kg')
         state_inj.set('Na+', 8270.6, 'mg'),             state_ini.set('Na+', 3931, 'mg')  # ppm
         state_inj.set('CO3-2', 5660, 'mg'),               state_ini.set('CO3-2', 17.8, 'mg')
-        state_inj.set('Cl-', 33.5, 'mg'),                 state_ini.set('Cl-', 6068, 'mg')
+        state_inj.set('Cl-', 5900, 'mg'),            state_ini.set('Cl-', 6051.725, 'mg')  # 33.5, 6068  / 5900, 6051.75
 
         solver_inj.solve(state_inj, conditions_inj)
         solver_ini.solve(state_ini, conditions_ini)
@@ -125,7 +125,9 @@ class Model(DartsModel):
         z_e_ini = np.zeros(E_mat.shape[0])
         for i in range(E_mat.shape[0]):
             z_e_ini[i] = np.divide(np.sum(np.multiply(E_mat[i], z_c_ini)), np.sum(np.multiply(E_mat, z_c_ini)))
-
+        # print(state_ini)
+        # print(state_inj)
+        # exit()
         self.thermal = 0
         # solid_density = [2000, 2000]  # fill in density for amount of solids present
         solid_density = []
@@ -159,11 +161,11 @@ class Model(DartsModel):
         # self.inj_stream = [0.51-self.zero, 0.49, self.zero]  # 0.000
         # self.inj_stream = self.ini_stream
 
-        self.params.first_ts = 1e-6
+        self.params.first_ts = 1e-4
         self.params.max_ts = 10
         self.params.mult_ts = 2
 
-        self.params.tolerance_newton = 1e-1
+        self.params.tolerance_newton = 1e-2
         self.params.tolerance_linear = 1e-6
         self.params.max_i_newton = 10
         self.params.max_i_linear = 50

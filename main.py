@@ -56,7 +56,7 @@ for i in range(1, ne):
 z_darts[-1] = np.ones(len(P)) - list(map(sum, zip(*z_darts[:-1])))
 
 nu, x, z_c, density, pH = [], [], [], [], []
-H2O, Ca, Na, Cl, OH, H, NaCO3, CO3, HCO3, Halite = [], [], [], [], [], [], [], [], [], []
+H2O, Ca, Na, Cl, OH, H, NaCO3, CO3, HCO3, NaHCO3, NaOH, Halite = [], [], [], [], [], [], [], [], [], [], [], []
 for i in range(len(P)):
     nu_output, x_output, z_c_output, density_output, pH_output = n.flash_properties(z_darts[:, i], 320, P[i])  # itor
     OH.append(z_c_output[0])
@@ -66,6 +66,8 @@ for i in range(len(P)):
     CO3.append(z_c_output[4])
     HCO3.append(z_c_output[5])
     NaCO3.append(z_c_output[6])
+    NaOH.append(z_c_output[7])
+    NaHCO3.append(z_c_output[8])
     H2O.append(z_c_output[-1])
     #NaOH.append(z_c_output[5])
     #Cax.append(z_c_output[6])
@@ -100,6 +102,8 @@ plt.plot(Na, label='Na+')
 plt.plot(Cl, label='Cl-')
 plt.plot(CO3, label='CO3-2')
 plt.plot(HCO3, label='HCO3-')
+plt.plot(NaHCO3, label='NaHCO3-')
+plt.plot(NaOH, label='NaOH')
 plt.plot()
 # plt.plot(Halite, label='Halite')
 plt.yscale('log')
