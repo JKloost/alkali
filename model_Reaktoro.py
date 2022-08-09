@@ -82,8 +82,8 @@ class Model(DartsModel):
         specs_inj.temperature(), specs_ini.temperature()
         specs_inj.pressure(), specs_ini.pressure()
         specs_inj.pH(), specs_ini.pH()
-        #specs_inj.charge(), specs_ini.charge()
-        #specs_inj.openTo('Cl-'), specs_ini.openTo('Cl-')
+        specs_inj.charge(), specs_ini.charge()
+        specs_inj.openTo('Cl-'), specs_ini.openTo('Cl-')
         solver_inj = EquilibriumSolver(specs_inj)
         solver_ini = EquilibriumSolver(specs_ini)
 
@@ -91,13 +91,13 @@ class Model(DartsModel):
 
         conditions_inj.temperature(273+20, 'kelvin'),  conditions_ini.temperature(273+20, 'kelvin')
         conditions_inj.pressure(200, 'bar'),        conditions_ini.pressure(200, 'bar')
-        conditions_inj.pH(11.1),                       conditions_ini.pH(7)
-        #conditions_inj.charge(0),                   conditions_ini.charge(0)
+        conditions_inj.pH(2),                       conditions_ini.pH(7)
+        conditions_inj.charge(0),                   conditions_ini.charge(0)
 
         state_inj.set('H2O', 1, 'kg'),              state_ini.set('H2O', 1, 'kg')
         state_inj.set('Na+', 8270.6, 'mg'),             state_ini.set('Na+', 3931, 'mg')  # ppm
         state_inj.set('CO3-2', 5660, 'mg'),               state_ini.set('CO3-2', 17.8, 'mg')
-        state_inj.set('Cl-', 33.5, 'mg'),            state_ini.set('Cl-', 6068, 'mg')  # 33.5, 6068  / 5900, 6051.75
+        state_inj.set('Cl-', 1000, 'mg'),            state_ini.set('Cl-', 1000, 'mg')  # 33.5, 6068  / 5900, 6051.75
 
         solver_inj.solve(state_inj, conditions_inj)
         solver_ini.solve(state_ini, conditions_ini)
@@ -473,5 +473,5 @@ class Reaktoro:
         pH = aprops.pH()
         if self.failure:
             print('z_c', z_c)
-        # density = [1050]
+        density = [1100]
         return nu, x, z_c, density, pH
