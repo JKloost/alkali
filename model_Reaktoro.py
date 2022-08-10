@@ -18,14 +18,14 @@ class Model(DartsModel):
         self.timer.node["initialization"].start()
 
         self.reaktoro = Reaktoro()  # Initialise Reaktoro
-        # self.db = PhreeqcDatabase.fromFile('C:/Users/Jaro/Documents/inversemodelling/code_thesis/DARTS_1D_model/Comp4George/phreeqc_cut.dat')
-        self.db = PhreeqcDatabase('phreeqc.dat')
+        self.db = PhreeqcDatabase.fromFile('C:/Users/Jaro/Documents/inversemodelling/code_thesis/DARTS_1D_model/Comp4George/phreeqc_cut.dat')
+        # self.db = PhreeqcDatabase('phreeqc.dat')
         # self.db = SupcrtDatabase('supcrtbl')
         self.zero = 1e-11
         perm = 100  # / (1 - solid_init) ** trans_exp
         nx = 100
         self.reservoir = StructReservoir(self.timer, nx=nx, ny=1, nz=1, dx=1, dy=10, dz=1, permx=perm, permy=perm,
-                                         permz=perm/10, poro=1, depth=1000)
+                                         permz=perm/10, poro=1, depth=100)
 
         # """well location"""
         self.reservoir.add_well("I1")
@@ -36,8 +36,8 @@ class Model(DartsModel):
 
         """Physical properties"""
         # Create property containers:
-        components_name = ['OH-', 'H+', 'Na+', 'Cl-', 'CO3-2', 'HCO3-', 'H2O']
-        elements_name = ['OH-', 'H+', 'Na+', 'Cl-', 'CO3-2']
+        components_name = ['OH-', 'H+', 'Na+', 'Cl-', 'CO3-2', 'K+', 'HCO3-', 'H2CO3', 'NaCO3-', 'NaOH', 'NaHCO3', 'H2O']
+        elements_name = ['OH-', 'H+', 'Na+', 'Cl-', 'CO3-2', 'K+']
         # aqueous_phase = ['H2O(aq)', 'CO2(aq)', 'Ca+2', 'CO3-2', 'Na+', 'Cl-']
         # gas_phase = ['H2O(g)', 'CO2(g)']
         # solid_phase = ['Calcite', 'Halite']
@@ -56,16 +56,18 @@ class Model(DartsModel):
         #                   [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
         #                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
         #                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
-        E_mat = np.array([[1, 0, 0, 0, 0, 0, 1],
-                          [0, 1, 0, 0, 0, 1, 1],
-                          [0, 0, 1, 0, 0, 0, 0],
-                          [0, 0, 0, 1, 0, 0, 0],
-                          [0, 0, 0, 0, 1, 1, 0]])
-        E_mat_ini = np.array([[1, 0, 0, 0, 0, 1],
-                             [0, 1, 0, 0, 0, 1],
-                             [0, 0, 1, 0, 0, 0],
-                             [0, 0, 0, 1, 0, 0],
-                             [0, 0, 0, 0, 1, 0]])
+        E_mat = np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+                          [0, 1, 0, 0, 0, 0, 1, 2, 0, 0, 1, 1],
+                          [0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0],
+                          [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0],
+                          [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0]])
+        E_mat_ini = np.array([[1, 0, 0, 0, 0, 0, 1],
+                              [0, 1, 0, 0, 0, 0, 1],
+                              [0, 0, 1, 0, 0, 0, 0],
+                              [0, 0, 0, 1, 0, 0, 0],
+                              [0, 0, 0, 0, 1, 0, 0],
+                              [0, 0, 0, 0, 0, 1, 0]])
         # E_mat_ini = E_mat
         # E_mat = np.array([[1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
         #                     [0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0],
@@ -78,7 +80,7 @@ class Model(DartsModel):
         for i in range(len(Mw)):
             component = Species(str(components_name[i]))
             Mw[i] = component.molarMass()*1000
-        aq_list = ['OH-', 'H+', 'Na+', 'Cl-', 'CO3-2', 'H2O']
+        aq_list = ['OH-', 'H+', 'Na+', 'Cl-', 'CO3-2', 'K+', 'H2O']
         aq_species = StringList(aq_list)
         sol_species = StringList([])
         aq = AqueousPhase(aq_species)
@@ -159,7 +161,7 @@ class Model(DartsModel):
         # self.property_container.kinetic_rate_ev = kinetic_basic(equi_prod, 1e-0, ne)
 
         """ Activate physics """
-        self.physics = Compositional(self.property_container, self.timer, n_points=101, min_p=0.1, max_p=10,
+        self.physics = Compositional(self.property_container, self.timer, n_points=1001, min_p=0.1, max_p=10,
                                      min_z=self.zero / 10, max_z=1 - self.zero / 10, cache=0)
 
         #                  H2O,                     CO2,    Ca++,       CO3--,      Na+, Cl-
@@ -171,10 +173,10 @@ class Model(DartsModel):
         # self.inj_stream = self.ini_stream
 
         self.params.first_ts = 1e-4
-        self.params.max_ts = 10
+        self.params.max_ts = 20
         self.params.mult_ts = 2
 
-        self.params.tolerance_newton = 1e-3
+        self.params.tolerance_newton = 1e-2
         self.params.tolerance_linear = 1e-6
         self.params.max_i_newton = 10
         self.params.max_i_linear = 50
@@ -243,8 +245,14 @@ class model_properties(property_container):
 
     def run_flash(self, pressure, ze):
         # Make every value that is the min_z equal to 0, as Reaktoro can work with 0, but not transport
+        # if sum(ze) != 1:
+        #     print('ze',ze)
+        #     print(sum(ze))
         ze = comp_extension(ze, self.min_z)
         self.nu, self.x, zc, density, pH = Flash_Reaktoro(ze, 273+20, pressure, self.reaktoro)
+        # if sum(zc) != 1:
+        #     print('zc',zc)
+        #     print(sum(zc))
         zc = comp_correction(zc, self.min_z)
 
         # Solid phase always needs to be present
@@ -336,6 +344,8 @@ def comp_correction(z, min_z):
 
 
 def Flash_Reaktoro(z_e, T, P, reaktoro):
+    if z_e[-1] > 1e-15:
+        z_e[-1] = 1e-16
     # if z_e[2] != z_e[3]:
     #     ze_new = (z_e[2]+z_e[3])/2
     #     z_e[2] = ze_new
@@ -353,13 +363,13 @@ def Flash_Reaktoro(z_e, T, P, reaktoro):
 class Reaktoro:
     def __init__(self):
         # db = SupcrtDatabase("supcrtbl")
-        # db = PhreeqcDatabase.fromFile("phreeqc_cut.dat")
+        db = PhreeqcDatabase.fromFile("phreeqc_cut.dat")
         # db = PhreeqcDatabase.fromFile("phreeqc_cat_ion.dat")
         # db = PhreeqcDatabase.fromFile('logKFrom961_bdotFixedTuned.dat')
-        db = PhreeqcDatabase('phreeqc.dat')
+        # db = PhreeqcDatabase('phreeqc.dat')
         '''Hardcode'''
-        self.aq_comp = StringList(['OH-', 'H+', 'Na+', 'Cl-', 'CO3-2', 'HCO3-', 'H2O'])
-        self.ne = 5  # Dont forget!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.aq_comp = StringList(['OH-', 'H+', 'Na+', 'Cl-', 'CO3-2', 'K+', 'HCO3-', 'H2CO3', 'NaCO3-', 'NaOH', 'NaHCO3', 'H2O'])
+        self.ne = 6  # Dont forget!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         # self.sol_comp = ['Halite']
         aq = AqueousPhase(self.aq_comp)
@@ -412,11 +422,12 @@ class Reaktoro:
         OH = self.cp.speciesAmount('OH-')
         Cl = self.cp.speciesAmount('Cl-')
         CO3 = self.cp.speciesAmount('CO3-2')
+        K = self.cp.speciesAmount('K+')
         HCO3 = self.cp.speciesAmount('HCO3-')
-        # H2CO3 = self.cp.speciesAmount('H2CO3')
-        # NaOH = self.cp.speciesAmount('NaOH')
-        # NaCO3 = self.cp.speciesAmount('NaCO3-')
-        # NaHCO3 = self.cp.speciesAmount('NaHCO3')
+        H2CO3 = self.cp.speciesAmount('H2CO3')
+        NaOH = self.cp.speciesAmount('NaOH')
+        NaCO3 = self.cp.speciesAmount('NaCO3-')
+        NaHCO3 = self.cp.speciesAmount('NaHCO3')
         H2O = self.cp.speciesAmount('H2O')
         # Halite = self.cp.speciesAmount('Halite')
 
@@ -435,8 +446,8 @@ class Reaktoro:
         #                float(mol_frac_aq_var[3]), float(mol_frac_aq_var[4]), float(mol_frac_aq_var[5])]
         # mol_frac_sol = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, float(solid/total_mol_sol), float(solid2/total_mol_sol)]
         mol_frac_aq = [float(OH/total_mol_aq), float(H/total_mol_aq), float(Na/total_mol_aq), float(Cl/total_mol_aq),
-                       float(CO3/total_mol_aq), float(HCO3/total_mol_aq),
-                       float(H2O/total_mol_aq)]
+                       float(CO3/total_mol_aq), float(K/total_mol_aq), float(HCO3/total_mol_aq), float(H2CO3/total_mol_aq),
+                       float(NaCO3/total_mol_aq), float(NaOH/total_mol_aq), float(NaHCO3/total_mol_aq), float(H2O/total_mol_aq)]
         # mol_frac_sol = [0, 0, 0, 0, 0, 1]
         # print(self.cp.elementAmount('C'))
         # if self.cp.elementAmount('C')<0.001:
@@ -489,5 +500,5 @@ class Reaktoro:
         pH = aprops.pH()
         if self.failure:
             print('z_c', z_c)
-        density = [1100]
+        # density = [1100]
         return nu, x, z_c, density, pH
