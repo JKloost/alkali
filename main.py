@@ -16,7 +16,7 @@ import os
 redirect_darts_output('run.log')
 n = Model()
 n.init()
-n.run_python(40, timestep_python=False)
+n.run_python(10000, timestep_python=True)
 n.print_timers()
 n.print_stat()
 time_data = pd.DataFrame.from_dict(n.physics.engine.time_data)
@@ -50,24 +50,24 @@ nc = n.property_container.nc + n.thermal
 ne = n.property_container.n_e
 nb = n.reservoir.nb
 P = Xn[0:ne*nb:ne]
-print('Xn', Xn)
+# print('Xn', Xn)
 z_darts = np.zeros((ne, len(P)))
 for i in range(1, ne):
     z_darts[i-1] = Xn[i:ne*nb:ne]
 z_darts[-1] = np.ones(len(P)) - list(map(sum, zip(*z_darts[:-1])))
-print('z_darts', z_darts)
+# print('z_darts', z_darts)
 nu, x, z_c, density, pH = [], [], [], [], []
 H2O, Ca, Na, Cl, OH, H, NaCO3, CO3, HCO3, NaHCO3, NaOH, H2CO3, K = [], [], [], [], [], [], [], [], [], [], [], [], []
 for i in range(len(P)):
-    print('input', z_darts[:,i])
+    # print('input', z_darts[:,i])
     nu_output, x_output, z_c_output, density_output, pH_output = n.flash_properties(z_darts[:, i], 273+20, P[i])  # itor
-    print('pH', pH_output)
+    # print('pH', pH_output)
     OH.append(z_c_output[0])
     H.append(z_c_output[1])
     Na.append(z_c_output[2])
     Cl.append(z_c_output[3])
     CO3.append(z_c_output[4])
-    #K.append(z_c_output[5])
+    # K.append(z_c_output[5])
     HCO3.append(z_c_output[5])
     # H2CO3.append(z_c_output[7])
     # NaCO3.append(z_c_output[8])

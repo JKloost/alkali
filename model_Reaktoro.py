@@ -133,7 +133,7 @@ class Model(DartsModel):
         z_e_ini = np.zeros(E_mat_ini.shape[0])
         for i in range(E_mat_ini.shape[0]):
             z_e_ini[i] = np.divide(np.sum(np.multiply(E_mat_ini[i], z_c_ini)), np.sum(np.multiply(E_mat_ini, z_c_ini)))
-        # print(state_ini)
+        # print(state_inj)
         # print(AqueousProps(ChemicalProps(state_ini)).pH())
         # exit()
         # print(state_inj)
@@ -173,10 +173,10 @@ class Model(DartsModel):
         # self.inj_stream = self.ini_stream
 
         self.params.first_ts = 1e-2
-        self.params.max_ts = 20
+        self.params.max_ts = 10
         self.params.mult_ts = 2
 
-        self.params.tolerance_newton = 1e-2
+        self.params.tolerance_newton = 1e-3
         self.params.tolerance_linear = 1e-6
         self.params.max_i_newton = 10
         self.params.max_i_linear = 50
@@ -501,7 +501,11 @@ class Reaktoro:
         pH = aprops.pH()
         if self.failure:
             print('z_c', z_c)
-        # density = [1100]
+        density = [1100]
+        # if density[0]>1200:
+        #     density[0]=1100
+        # if density[0] < 1000:
+        #     density[0] = 1000
         # print(z_c)
         # print(pH)
         return nu, x, z_c, density, pH
