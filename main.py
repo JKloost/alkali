@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 import sys
-sys.path.append('C:/Users/Jaro/Documents/inversemodelling/code_thesis/DARTS_1D_model/physics_sup_2/')
+sys.path.append('C:/Users/Jaro/Documents/inversemodelling/code_thesis/DARTS_1D_model/physics_sup_2/')  # Change this
 
 from model_Reaktoro import Model
 # from model_phreeqc import Model
@@ -50,33 +50,28 @@ nc = n.property_container.nc + n.thermal
 ne = n.property_container.n_e
 nb = n.reservoir.nb
 P = Xn[0:ne*nb:ne]
-# print('Xn', Xn)
 z_darts = np.zeros((ne, len(P)))
 for i in range(1, ne):
     z_darts[i-1] = Xn[i:ne*nb:ne]
 z_darts[-1] = np.ones(len(P)) - list(map(sum, zip(*z_darts[:-1])))
-# print('z_darts', z_darts)
 nu, x, z_c, density, pH = [], [], [], [], []
-H2O, Ca, Na, Cl, OH, H, NaCO3, CO3, FeOH, NaOH, FeCl2, NaCl, Fe = [], [], [], [], [], [], [], [], [], [], [], [], []
+H2O, Ca, Na, Cl, OH, H, NaCO3, CO3, HCO3, NaHCO3, NaOH, H2CO3, K = [], [], [], [], [], [], [], [], [], [], [], [], []
 for i in range(len(P)):
-    # print('input', z_darts[:,i])
     nu_output, x_output, z_c_output, density_output, pH_output = n.flash_properties(z_darts[:, i], 273+20, P[i])  # itor
-    # print('pH', pH_output)
-    Na.append(z_c_output[1])
-    Cl.append(z_c_output[2])
-    Fe.append(z_c_output[3])
-    CO3.append(z_c_output[4])
-    NaCl.append(z_c_output[5])
-    NaOH.append(z_c_output[6])
-    FeCl2.append(z_c_output[7])
-    FeOH.append(z_c_output[8])
+    CO3.append(z_c_output[0])
+    OH.append(z_c_output[1])
+    H.append(z_c_output[2])
+    Na.append(z_c_output[3])
+    Cl.append(z_c_output[4])
+    HCO3.append(z_c_output[5])
+    H2O.append(z_c_output[-1])
+    # K.append(z_c_output[5])
+    # H2CO3.append(z_c_output[7])
     # NaCO3.append(z_c_output[8])
     # NaOH.append(z_c_output[9])
     # NaHCO3.append(z_c_output[10])
-    H2O.append(z_c_output[0])
-    #NaOH.append(z_c_output[5])
-    #Cax.append(z_c_output[6])
-    #Halite.append(z_c_output[5])
+    # NaOH.append(z_c_output[5])
+    # Halite.append(z_c_output[5])
     nu.append(nu_output[0])
     x.append(x_output)
     z_c.append(z_c_output)
@@ -89,12 +84,11 @@ plt.legend()
 plt.show()
 
 plt.figure(2)
-plt.plot(z_darts[0], label='H2O')
-plt.plot(z_darts[1], label='Na+')
-plt.plot(z_darts[2], label='Cl-')
-plt.plot(z_darts[3], label='Fe+2')
-plt.plot(z_darts[4], label='OH-')
-# plt.plot(z_darts[5], label='K+')
+plt.plot(z_darts[0], label='CO3-2')
+plt.plot(z_darts[1], label='OH-')
+plt.plot(z_darts[2], label='H+')
+plt.plot(z_darts[3], label='Na+')
+plt.plot(z_darts[4], label='Cl-')
 plt.legend()
 plt.ylabel('z_e')
 plt.yscale('log')
@@ -104,17 +98,17 @@ plt.show()
 
 plt.figure(3)
 plt.plot(H2O, label='H2O')
+plt.plot(OH, label='OH-')
+plt.plot(H, label='H+')
 plt.plot(Na, label='Na+')
 plt.plot(Cl, label='Cl-')
-plt.plot(Fe, label='Fe+2')
-plt.plot(OH, label='OH-')
-plt.plot(NaCl, label='NaCl')
-plt.plot(NaOH, label='NaOH')
-plt.plot(FeOH, label='FeOH+')
-plt.plot(FeCl2, label='FeCl2')
+plt.plot(CO3, label='CO3-2')
+plt.plot(HCO3, label='HCO3-')
+# plt.plot(H2CO3, label='H2CO3')
+# plt.plot(NaCO3, label='NaCO3')
+# plt.plot(NaHCO3, label='NaHCO3-')
 # plt.plot(NaOH, label='NaOH')
 # plt.plot(K, label='K+')
-plt.plot()
 # plt.plot(Halite, label='Halite')
 plt.yscale('log')
 plt.legend(loc=4)
@@ -124,9 +118,9 @@ plt.xlabel('x dimensionless')
 plt.title('Composition', y=1)
 plt.show()
 
-# plt.figure(4)
-# plt.plot(pH)
-# plt.ylabel('pH')
-# plt.xlabel('x dimensionless')
-# plt.title('pH', y=1)
-# plt.show()
+plt.figure(4)
+plt.plot(pH)
+plt.ylabel('pH')
+plt.xlabel('x dimensionless')
+plt.title('pH', y=1)
+plt.show()
