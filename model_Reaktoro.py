@@ -35,14 +35,16 @@ class Model(DartsModel):
 
         """Physical properties"""
         # Create property containers:
-        components_name = ['CO3-2', 'OH-', 'H+', 'Na+', 'Cl-', 'HCO3-', 'H2O']
+        components_name = ['Cl-', 'OH-', 'H+', 'CO3-2', 'Na+', 'HCO3-', 'H2O']
         elements_name = components_name[:5]
 
-        E_mat = np.array([[1, 0, 0, 0, 0, 1, 0],
+        E_mat = np.array([[1, 0, 0, 0, 0, 0, 0],
                           [0, 1, 0, 0, 0, 0, 1],
                           [0, 0, 1, 0, 0, 1, 1],
-                          [0, 0, 0, 1, 0, 0, 0],
+                          [0, 0, 0, 1, 0, 1, 0],
                           [0, 0, 0, 0, 1, 0, 0]])
+
+        log_flag = 0
 
         E_mat_ini = E_mat
         Mw = np.zeros(len(components_name))
@@ -108,13 +110,14 @@ class Model(DartsModel):
         # print(state_ini)
         # print(AqueousProps(state_ini).pH())
 
+
         self.thermal = 0
         # solid_density = [2000, 2000]  # fill in density for amount of solids present
         solid_density = []
         self.property_container = model_properties(phases_name=['wat'],
                                                    components_name=components_name, elements_name=elements_name,
-                                                   reaktoro=self.reaktoro, E_mat=E_mat, diff_coef=1e-9, rock_comp=1e-7,
-                                                   Mw=Mw, min_z=self.zero / 10, solid_dens=solid_density)
+                                                   reaktoro=self.reaktoro, E_mat=E_mat, diff_coef=1e-9, rock_comp=1e-5,
+                                                   Mw=Mw, log_flag=log_flag, min_z=self.zero / 10, solid_dens=solid_density)
 
         """ properties correlations """
         # self.property_container.flash_ev = Flash(self.components[:-1], [10, 1e-12, 1e-1], self.zero)
@@ -129,18 +132,54 @@ class Model(DartsModel):
         # ne = self.property_container.nc + self.thermal
         # self.property_container.kinetic_rate_ev = kinetic_basic(equi_prod, 1e-0, ne)
 
-        """ Activate physics """
-        self.physics = Compositional(self.property_container, self.timer, n_points=7001, min_p=1, max_p=1000,
-                                     min_z=self.zero / 10, max_z=1-self.zero, cache=0)
+        z_diff = np.zeros(len(z_e_ini))
+        min_z = np.zeros(len(z_e_ini))
+        max_z = np.zeros(len(z_e_ini))
+        for i in range(len(z_e_ini)):
+            z_diff[i] = abs(z_e_ini[i] - z_e_inj[i]) # 0.005
+            # if abs(z_e_ini[i] - z_e_inj[i]) < z_diff[i]:
+            #     z_diff[i] = abs(z_e_ini[i] - z_e_inj[i])
+            min_z[i] = min(z_e_ini[i], z_e_inj[i]) - z_diff[i]
+            max_z[i] = max(z_e_ini[i], z_e_inj[i]) + z_diff[i]
+            if min_z[i] < self.zero:
+                min_z[i] = self.zero
+            if max_z[i] > 1 - self.zero:
+                max_z[i] = 1 - self.zero
+        min_z = min_z[:-1]
+        max_z = max_z[:-1]
+        if log_flag == 1:
+            self.ini_stream = np.log(z_e_ini[:-1])
+            self.inj_stream = np.log(z_e_inj[:-1])
+            print('initial: ', np.exp(self.ini_stream))
+            print('injection: ', np.exp(self.inj_stream))
+            min_z = np.log(min_z)
+            max_z = np.log(max_z)
+        else:
+            self.ini_stream = z_e_ini[:-1]
+            self.inj_stream = z_e_inj[:-1]
+            print('initial: ', self.ini_stream)
+            print('injection: ', self.inj_stream)
 
-        self.ini_stream = z_e_ini[:-1]
-        self.inj_stream = z_e_inj[:-1]
+        """ Activate physics """
+        n_points = [101, 101, 1000001, 1000001, 1001]
+        # n_points = [1001]*len(elements_name)
+        min_z = [self.zero] * (len(elements_name)-1)
+        max_z = 1 - self.zero * (len(elements_name)-1)
+        self.physics = Compositional(self.property_container, self.timer, n_points=n_points, min_p=1, max_p=1000,
+                                     min_z=min_z, max_z=max_z, cache=0)
+
+        # print(self.ini_stream)
+        # print(self.inj_stream)
+        # exit()
         # self.ini_stream = [0.48, 0.48, 0.009, 0.009]
         # self.inj_stream = [0.47, 0.47, 0.02, 0.02]
-
+        # print(z_e_inj)
+        # print(z_e_ini)
+        # exit()
         self.params.first_ts = 1e-2
         self.params.max_ts = 10
-        self.params.mult_ts = 2
+        self.params.mult_ts = 1.5
+        self.params.log_transform = log_flag
 
         self.params.tolerance_newton = 1e-3
         self.params.tolerance_linear = 1e-6
@@ -198,7 +237,7 @@ class Model(DartsModel):
 
 
 class model_properties(property_container):
-    def __init__(self, phases_name, components_name, elements_name, reaktoro, E_mat, Mw, min_z=1e-12,
+    def __init__(self, phases_name, components_name, elements_name, reaktoro, E_mat, Mw, log_flag, min_z=1e-12,
                  diff_coef=float(0), rock_comp=1e-6, solid_dens=None):
         if solid_dens is None:
             solid_dens = []
@@ -209,12 +248,15 @@ class model_properties(property_container):
         self.elements_name = elements_name
         self.reaktoro = reaktoro
         self.E_mat = E_mat
+        self.log_flag = log_flag
 
     def run_flash(self, pressure, ze):
+        # if self.log_flag == 1:
+        #     ze = np.exp(ze)
         # Make every value that is the min_z equal to 0, as Reaktoro can work with 0, but not transport
-        ze = comp_extension(ze, self.min_z)
+        # ze = comp_extension(ze, self.min_z)
         self.nu, self.x, zc, density, pH = Flash_Reaktoro(ze, 320, pressure, self.reaktoro)
-        zc = comp_correction(zc, self.min_z)
+        # zc = comp_correction(zc, self.min_z)
 
         # Solid phase always needs to be present
         ph = list(range(len(self.nu)))  # ph = range(number of total phases)
@@ -330,7 +372,7 @@ class Reaktoro:
         db = PhreeqcDatabase('phreeqc.dat')
 
         '''Hardcode'''
-        self.aq_comp = StringList(['CO3-2', 'OH-', 'H+', 'Na+', 'Cl-', 'HCO3-', 'H2O'])
+        self.aq_comp = StringList(['Cl-', 'OH-', 'H+', 'CO3-2', 'Na+', 'HCO3-', 'H2O'])
         self.ne = 5  # Dont forget!!!!!!!!!!!!!!!!!!!!!!!!!!################################################################
 
         # self.sol_comp = ['Halite']
@@ -401,8 +443,8 @@ class Reaktoro:
         mol_frac_aq_var = liq_props.speciesMoleFractions()
 
         '''Hardcode'''
-        mol_frac_aq = [float(CO3/total_mol_aq), float(OH/total_mol_aq), float(H/total_mol_aq), float(Na/total_mol_aq),
-                       float(Cl/total_mol_aq), float(HCO3/total_mol_aq), float(H2O/total_mol_aq)]
+        mol_frac_aq = [float(Cl/total_mol_aq), float(OH/total_mol_aq), float(H/total_mol_aq), float(CO3/total_mol_aq),
+                       float(Na/total_mol_aq), float(HCO3/total_mol_aq), float(H2O/total_mol_aq)]
 
         # volume_gas = gas_props.volume()
         volume_aq = liq_props.volume()
