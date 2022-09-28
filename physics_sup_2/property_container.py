@@ -116,7 +116,10 @@ class property_container:
         # Composition vector and pressure from state:
         vec_state_as_np = np.asarray(state)
         pressure = vec_state_as_np[0]
-        ze = np.append(vec_state_as_np[1:self.n_e], 1 - np.sum(vec_state_as_np[1:self.n_e]))
+        if self.log_flag == 1:
+            ze = np.append(np.exp(vec_state_as_np[1:self.n_e]), 1 - np.sum(np.exp(vec_state_as_np[1:self.n_e])))
+        else:
+            ze = np.append(vec_state_as_np[1:self.n_e], 1 - np.sum(vec_state_as_np[1:self.n_e]))
 
         if ze[-1] < 0:
             # print(zc)

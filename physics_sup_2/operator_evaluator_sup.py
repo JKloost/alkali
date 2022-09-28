@@ -35,6 +35,7 @@ class ReservoirOperators(operator_set_evaluator_iface):
         nm = self.property.nm  # number of minerals
         nc_fl = nc - nm  # number of fluids (aq + gas)
         neq = ne + self.thermal  # number of equations
+        log_flag = self.property.log_flag
 
         # Total needs to be total of element based, as this will be the size of values
         #       al + bt        + gm + dlt + chi     + rock_temp por    + gr/cap  + por
@@ -46,9 +47,17 @@ class ReservoirOperators(operator_set_evaluator_iface):
         (self.sat, self.x, rho, self.rho_m, self.mu, self.kr, self.pc, self.ph) = self.property.evaluate(state)
 
         self.compr = (1 + self.property.rock_comp * (pressure - self.property.p_ref))  # compressible rock
-        ze = np.append(vec_state_as_np[1:ne], 1 - np.sum(vec_state_as_np[1:ne]))
+        if log_flag == 1:
+            ze = np.append(np.exp(vec_state_as_np[1:ne]), 1 - np.sum(np.exp(vec_state_as_np[1:ne])))
+        else:
+            ze = np.append(vec_state_as_np[1:ne], 1 - np.sum(vec_state_as_np[1:ne]))
         rho_t = np.sum(np.multiply(self.rho_m, self.sat))
-        phi = 1 # - rho_t * self.sat[-1]
+        # print(self.x[-1])
+        # print(rho)
+        # print(self.sat)
+        # exit()
+        phi = 1  # - (self.sat[-1] * self.rho[-1])/rho_t * (self.x[-1])  # - rho_t * self.sat[-1]
+        # print(phi)
         # print(self.sat)
         # print(rho_t)
         # print(phi)
@@ -71,8 +80,13 @@ class ReservoirOperators(operator_set_evaluator_iface):
             for i in range(nc_fl):
                 beta[i] = self.x[j][i] * self.rho_m[j] * self.kr[j] / self.mu[j]
                 # values[shift + i] = self.x[j][i] * self.rho_m[j] * self.kr[j] / self.mu[j]
+            # print(nc)
+            # print(ne)
+            # print(self.E_mat.shape[0])
+            # print(beta)
             for i in range(self.E_mat.shape[0]):
                 values[shift+i] = np.sum(np.multiply(self.E_mat[i], beta[i]))
+            # exit()
 
         """ Gamma operator for diffusion (same for thermal and isothermal) """
         shift = neq + neq * nph
@@ -112,6 +126,10 @@ class ReservoirOperators(operator_set_evaluator_iface):
             values[shift + 3 + nph + i] = self.pc[i]
         # E5_> porosity
         values[shift + 3 + 2 * nph] = phi
+
+        # print(pressure, ze)
+        # print(self.x[0])
+        # print('.')
 
         return 0
 
@@ -155,7 +173,11 @@ class WellOperators(operator_set_evaluator_iface):
         (sat, x, rho, rho_m, mu, kr, pc, ph) = self.property.evaluate(state)
 
         self.compr = (1 + self.property.rock_comp * (pressure - self.property.p_ref))  # compressible rock
-        ze = np.append(vec_state_as_np[1:ne], 1 - np.sum(vec_state_as_np[1:ne]))
+        log_flag = self.property.log_flag
+        if log_flag == 1:
+            ze = np.append(np.exp(vec_state_as_np[1:ne]), 1 - np.sum(np.exp(vec_state_as_np[1:ne])))
+        else:
+            ze = np.append(vec_state_as_np[1:ne], 1 - np.sum(vec_state_as_np[1:ne]))
 
         density_tot = np.sum(sat * rho_m)
         density_tot_e = np.zeros(nph)
