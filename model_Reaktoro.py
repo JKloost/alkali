@@ -21,10 +21,11 @@ class Model(DartsModel):
         self.db = PhreeqcDatabase('phreeqc.dat')
         # self.db = SupcrtDatabase('supcrtbl')
         self.zero = 1e-11
-        perm = 1  # np.array([1,1,0,0])  # mD # / (1 - solid_init) ** trans_exp
-        nx = 100
-        self.reservoir = StructReservoir(self.timer, nx=nx, ny=1, nz=1, dx=1, dy=10, dz=1, permx=perm, permy=perm,
-                                         permz=perm/10, poro=1, depth=1000)
+        perm = 500  # np.array([1,1,0,0])  # mD # / (1 - solid_init) ** trans_exp
+        nx = 200
+        dx = 0.3 / nx
+        self.reservoir = StructReservoir(self.timer, nx=nx, ny=1, nz=1, dx=dx, dy=0.05, dz=0.05, permx=perm, permy=perm,
+                                         permz=perm, poro=0.2, depth=1000)
 
         # """well location"""
         self.reservoir.add_well("I1")
@@ -125,7 +126,7 @@ class Model(DartsModel):
         self.property_container.density_ev = dict([
                                                    ('wat', Density(compr=1e-6, dens0=1000))])
         self.property_container.viscosity_ev = dict([
-                                                     ('wat', ViscosityConst(1))])
+                                                     ('wat', ViscosityConst(0.001))])
         self.property_container.rel_perm_ev = dict([
                                                     ('wat', PhaseRelPerm("wat"))])
 
@@ -163,9 +164,12 @@ class Model(DartsModel):
         """ Activate physics """
         n_points = [101, 101, 1000001, 1000001, 1001]
         # n_points = [1001]*len(elements_name)
-        min_z = [self.zero] * (len(elements_name)-1)
-        max_z = 1 - self.zero * (len(elements_name)-1)
-        self.physics = Compositional(self.property_container, self.timer, n_points=n_points, min_p=1, max_p=1000,
+        # min_z = [self.zero] * (len(elements_name)-1)
+        # max_z = 1 - self.zero * (len(elements_name)-1)
+        min_z = [1e-11, 0.497, 0.497, 1e-7]
+        # self.n_axes_max = value_vector([max_p] + [max_z] * (self.ne-1))
+        max_z = [0.002, 0.5, 0.5, 9e-4]
+        self.physics = Compositional(self.property_container, self.timer, n_points=n_points, min_p=0.1, max_p=2,
                                      min_z=min_z, max_z=max_z, cache=0)
 
         # print(self.ini_stream)
@@ -176,8 +180,8 @@ class Model(DartsModel):
         # print(z_e_inj)
         # print(z_e_ini)
         # exit()
-        self.params.first_ts = 1e-2
-        self.params.max_ts = 10
+        self.params.first_ts = 1e-4
+        self.params.max_ts = 1
         self.params.mult_ts = 1.5
         self.params.log_transform = log_flag
 
@@ -193,7 +197,7 @@ class Model(DartsModel):
     # Initialize reservoir and set boundary conditions:
     def set_initial_conditions(self):
         """ initialize conditions for all scenarios"""
-        self.physics.set_uniform_initial_conditions(self.reservoir.mesh, 100, self.ini_stream)
+        self.physics.set_uniform_initial_conditions(self.reservoir.mesh, 1, self.ini_stream)
         # volume = np.array(self.reservoir.volume, copy=False)
         # volume.fill(100)
         # volume[0] = 1e10
@@ -216,10 +220,11 @@ class Model(DartsModel):
     def set_boundary_conditions(self):
         for i, w in enumerate(self.reservoir.wells):
             if i == 0:
-                # w.control = self.physics.new_rate_inj(0.2, self.inj_stream, 0)
-                w.control = self.physics.new_bhp_inj(105, self.inj_stream)
+                w.control = self.physics.new_rate_inj(0.00015, self.inj_stream, 0)
+                w.constraint = self.physics.new_bhp_inj(1.2, self.inj_stream)
             else:
-                w.control = self.physics.new_bhp_prod(95)
+                #w.control = self.physics.new_rate_prod(1.1*0.00015, 0)
+                w.control = self.physics.new_bhp_prod(0.95)
 
     def set_op_list(self):
         self.op_num = np.array(self.reservoir.mesh.op_num, copy=False)
