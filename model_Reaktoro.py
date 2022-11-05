@@ -23,10 +23,16 @@ class Model(DartsModel):
         self.zero = 1e-11
         perm = 500  # np.array([1,1,0,0])  # mD # / (1 - solid_init) ** trans_exp
         nx = 200
-        dx = 0.3 / nx
+        dx = np.ones(nx) * (0.3 / nx)
+        self.poro = np.ones(nx) * 0.2
         self.reservoir = StructReservoir(self.timer, nx=nx, ny=1, nz=1, dx=dx, dy=0.05, dz=0.05, permx=perm, permy=perm,
-                                         permz=perm, poro=0.2, depth=1000)
+                                         permz=perm, poro=self.poro, depth=1000)
+        volume = np.array(self.reservoir.mesh.volume)
+        poro = np.array(self.reservoir.mesh.poro)
 
+        print('poro volume = ', np.sum(volume*poro))
+        self.Qinj = np.sum(volume*poro)
+        # exit()
         # """well location"""
         self.reservoir.add_well("I1")
         self.reservoir.add_perforation(well=self.reservoir.wells[-1], i=1, j=1, k=1, multi_segment=False)
@@ -52,6 +58,7 @@ class Model(DartsModel):
         for i in range(len(Mw)):
             component = Species(str(components_name[i]))
             Mw[i] = component.molarMass() * 1000
+        print(Mw)
         aq_list = components_name
         aq_species = StringList(aq_list)
         sol_species = StringList([])
@@ -71,8 +78,8 @@ class Model(DartsModel):
 
         conditions_inj, conditions_ini = EquilibriumConditions(specs_inj), EquilibriumConditions(specs_ini)
 
-        conditions_inj.temperature(320, 'kelvin'),      conditions_ini.temperature(320, 'kelvin')
-        conditions_inj.pressure(100, 'bar'),            conditions_ini.pressure(100, 'bar')
+        conditions_inj.temperature(293, 'kelvin'),      conditions_ini.temperature(293, 'kelvin')
+        conditions_inj.pressure(1, 'bar'),              conditions_ini.pressure(1, 'bar')
         conditions_inj.pH(11.1),                        conditions_ini.pH(7)
         conditions_inj.charge(0),                       conditions_ini.charge(0)
 
@@ -117,16 +124,16 @@ class Model(DartsModel):
         solid_density = []
         self.property_container = model_properties(phases_name=['wat'],
                                                    components_name=components_name, elements_name=elements_name,
-                                                   reaktoro=self.reaktoro, E_mat=E_mat, diff_coef=1e-9, rock_comp=1e-5,
+                                                   reaktoro=self.reaktoro, E_mat=E_mat, diff_coef=1e-9, rock_comp=1e-50,
                                                    Mw=Mw, log_flag=log_flag, min_z=self.zero / 10, solid_dens=solid_density)
 
         """ properties correlations """
         # self.property_container.flash_ev = Flash(self.components[:-1], [10, 1e-12, 1e-1], self.zero)
         # return [y, x], [V, 1-V]
         self.property_container.density_ev = dict([
-                                                   ('wat', Density(compr=1e-6, dens0=1000))])
+                                                   ('wat', Density(compr=0.0001, dens0=1000))])
         self.property_container.viscosity_ev = dict([
-                                                     ('wat', ViscosityConst(0.001))])
+                                                     ('wat', ViscosityConst(1))])  # cP
         self.property_container.rel_perm_ev = dict([
                                                     ('wat', PhaseRelPerm("wat"))])
 
@@ -162,14 +169,14 @@ class Model(DartsModel):
             print('injection: ', self.inj_stream)
 
         """ Activate physics """
-        n_points = [101, 101, 1000001, 1000001, 1001]
+        n_points = [101, 101, 100001, 100001, 10001]
         # n_points = [1001]*len(elements_name)
         # min_z = [self.zero] * (len(elements_name)-1)
-        # max_z = 1 - self.zero * (len(elements_name)-1)
+        # max_z = [1 - self.zero] * (len(elements_name)-1)
         min_z = [1e-11, 0.497, 0.497, 1e-7]
         # self.n_axes_max = value_vector([max_p] + [max_z] * (self.ne-1))
         max_z = [0.002, 0.5, 0.5, 9e-4]
-        self.physics = Compositional(self.property_container, self.timer, n_points=n_points, min_p=0.1, max_p=2,
+        self.physics = Compositional(self.property_container, self.timer, n_points=n_points, min_p=0.001, max_p=10,
                                      min_z=min_z, max_z=max_z, cache=0)
 
         # print(self.ini_stream)
@@ -180,16 +187,17 @@ class Model(DartsModel):
         # print(z_e_inj)
         # print(z_e_ini)
         # exit()
-        self.params.first_ts = 1e-4
-        self.params.max_ts = 1
-        self.params.mult_ts = 1.5
+        self.params.first_ts = 1e-6
+        self.params.max_ts = 0.1
+        self.params.mult_ts = 2
         self.params.log_transform = log_flag
 
-        self.params.tolerance_newton = 1e-3
+        self.params.tolerance_newton = 1e-2
         self.params.tolerance_linear = 1e-6
         self.params.max_i_newton = 10
         self.params.max_i_linear = 50
         self.params.newton_type = sim_params.newton_local_chop
+        self.params.nonlinear_norm_type = sim_params.LINF
         # self.params.newton_params[0] = 0.2
 
         self.timer.node["initialization"].stop()
@@ -220,11 +228,11 @@ class Model(DartsModel):
     def set_boundary_conditions(self):
         for i, w in enumerate(self.reservoir.wells):
             if i == 0:
-                w.control = self.physics.new_rate_inj(0.00015, self.inj_stream, 0)
-                w.constraint = self.physics.new_bhp_inj(1.2, self.inj_stream)
+                # w.constraint = self.physics.new_bhp_inj(1.2, self.inj_stream)
+                w.control = self.physics.new_rate_inj(self.Qinj, self.inj_stream, 0)
             else:
-                #w.control = self.physics.new_rate_prod(1.1*0.00015, 0)
                 w.control = self.physics.new_bhp_prod(0.95)
+                w.constraint = self.physics.new_rate_prod(1*self.Qinj, 0)
 
     def set_op_list(self):
         self.op_num = np.array(self.reservoir.mesh.op_num, copy=False)
@@ -260,7 +268,7 @@ class model_properties(property_container):
         #     ze = np.exp(ze)
         # Make every value that is the min_z equal to 0, as Reaktoro can work with 0, but not transport
         # ze = comp_extension(ze, self.min_z)
-        self.nu, self.x, zc, density, pH = Flash_Reaktoro(ze, 320, pressure, self.reaktoro)
+        self.nu, self.x, zc, density, pH = Flash_Reaktoro(ze, 293, pressure, self.reaktoro)
         # zc = comp_correction(zc, self.min_z)
 
         # Solid phase always needs to be present
@@ -478,8 +486,8 @@ class Reaktoro:
         for i in range(len(z_c)):
             z_c[i] = float(self.cp.speciesAmount(i)/total_mol)
 
-        density = [float(density_aq)]
-        # density = [1050]
+        # density = [float(density_aq)]
+        density = [1000]
 
         pH = aprops.pH()
         if self.failure:
